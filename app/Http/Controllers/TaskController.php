@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Project;
-use App\Models\Milestone; // <-- Aggiunto per poter cercare le milestone
+use App\Models\Milestone;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
@@ -34,7 +34,6 @@ class TaskController extends Controller
             'status'      => 'required|in:open,in_progress,done',
             'priority'    => 'required|in:low,medium,high',
             'assignee_id' => 'nullable|exists:users,id',
-            // Valideremo il nuovo campo 'target' che ci arriva dal form
             'target'      => 'nullable|string',
         ]);
 
@@ -62,13 +61,8 @@ class TaskController extends Controller
         // Crea la Task
         Task::create($validated);
 
-        // Redirect intelligente
-        if (!empty($validated['project_id'])) {
-            return redirect()->route('projects.edit', $validated['project_id'])
-                ->with('success', 'Task creata e aggiunta al progetto!');
-        }
-
-        return redirect()->route('tasks.index')
+        // Redirect intelligente: torniamo sempre alla pagina da cui abbiamo compilato il form!
+        return redirect()->back()
             ->with('success', 'Task creata con successo!');
     }
 
@@ -122,7 +116,8 @@ class TaskController extends Controller
 
         $task->update($validated);
 
-        return redirect()->route('tasks.index')
+        // ECCO LA MODIFICA: Ora torniamo indietro invece di andare a tasks.index
+        return redirect()->back()
             ->with('success', 'Task aggiornata con successo!');
     }
 

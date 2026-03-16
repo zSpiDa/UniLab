@@ -73,7 +73,6 @@ class ProjectController extends Controller
             'start_date'  => 'required|date',
             'end_date'    => 'nullable|date|after_or_equal:start_date',
             'description' => 'required|string',
-            // Corretto: questi campi sono opzionali, non obbligatori
             'tags'         => 'nullable|string',
             'milestones'   => 'nullable|array',
             'publications' => 'nullable|string',
@@ -89,7 +88,6 @@ class ProjectController extends Controller
 
         $project = Project::create($validated);
 
-        // --- SALVATAGGIO MEMBRI ---
         $syncData = [];
 
         foreach ($usersInput as $userId) {
@@ -171,7 +169,6 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'title'       => 'required|string|max:255',
             'status'      => 'required|string|max:100',
-            // Reso nullable il resto per evitare che blocchi il salvataggio se lasciati vuoti
             'code'        => 'nullable|string|max:255',
             'funder'      => 'nullable|string|max:255',
             'start_date'  => 'nullable|date',
