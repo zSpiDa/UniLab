@@ -27,6 +27,7 @@
         <div class="card mb-3">
             <div class="card-body">
                 <h2 class="h5">Il tuo gruppo di ricerca</h2>
+                @if($group)
                 <div class="mt-2">
                     Sei membro del gruppo di ricerca <strong>{{ $group->name }}</strong>.
                     <div class="text-muted small">{{ $group->description }}</div>
@@ -40,6 +41,9 @@
                     </div>
                     <a href="{{ route('groups.edit') }}" class="btn btn-primary mt-2">Gestisci il tuo gruppo</a>
                 </div>
+                @else
+                <p class="text-muted">Non sei ancora associato a nessun gruppo di ricerca.</p>
+                @endif
             </div>
         </div>
         @endauth

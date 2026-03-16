@@ -16,4 +16,20 @@ class PublicationResource extends JsonResource
     {
         return parent::toArray($request);
     }
+
+    //esporre id, title, venue, doi, status, target_deadline, author, authors nested, projects nested
+    public function toArrayWithDetails(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'venue' => $this->venue,
+            'doi' => $this->doi,
+            'status' => $this->status,
+            'target_deadline' => $this->target_deadline,
+            'author' => $this->author,
+            'authors' => $this->authors,
+            'projects' => $this->projects,
+        ];
+    }
 }

@@ -2,18 +2,11 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthTokenController;
 use App\Http\Controllers\Api\ProjectApiController;
 use App\Http\Controllers\Api\PublicationApiController;
-use App\Http\Controllers\Api\TaskApiController;
 use App\Http\Controllers\Api\UserApiController;
-use App\Http\Controllers\Api\MilestoneApiController;
-use App\Http\Controllers\Api\CommentApiController;
-use App\Http\Controllers\Api\TagApiController;
-use App\Http\Controllers\Api\GroupApiController;
-use App\Http\Controllers\Api\AttachmentApiController;
-use App\Http\Controllers\Api\DashboardApiController;
-use App\Http\Controllers\Api\AuthTokenController;
-
+use App\Http\Controllers\Api\ExportApiController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -25,20 +18,35 @@ use App\Http\Controllers\Api\AuthTokenController;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
-Route::post('v1/tokens', [AuthTokenController::class, 'store']);
-Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
-    Route::delete('/tokens', [AuthTokenController::class, 'destroy']);
-    Route::apiResource('projects', ProjectApiController::class);
-    Route::apiResource('publications', PublicationApiController::class);
 
-    Route::get('/user', function (Request $r) {
-        return $r->user();
+Route::prefix('v1')->group(function () {
+    // Token login (public)
+    Route::post('/tokens', [AuthTokenController::class, 'store']);
+
+    // Protected API
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::delete('/tokens', [AuthTokenController::class, 'destroy']);
+
+        Route::get('/user', function (Request $request) {
+            return $request->user();
+        });
+
+        Route::apiResource('users', UserApiController::class)->only(['index', 'show']);
+        Route::apiResource('projects', ProjectApiController::class)->only(['index', 'show']);
+        Route::post('/projects', [ProjectApiController::class, 'store'])->middleware('role:pi,manager');
+        Route::match(['put', 'patch'], '/projects/{project}', [ProjectApiController::class, 'update'])->middleware('role:pi,manager');
+        Route::delete('/projects/{project}', [ProjectApiController::class, 'destroy'])->middleware('role:pi,manager');
+
+        
+        Route::apiResource('publications', PublicationApiController::class)->only(['index', 'show']);
+        Route::post('/publications', [PublicationApiController::class, 'store'])->middleware('role:pi,manager,researcher');
+        Route::match(['put', 'patch'], '/publications/{publication}', [PublicationApiController::class, 'update'])->middleware('role:pi,manager,researcher');
+        Route::delete('/publications/{publication}', [PublicationApiController::class, 'destroy'])->middleware('role:pi,manager,researcher');
+        Route::get('/export/projects', [ExportApiController::class, 'projects']);
+        Route::get('/export/publications', [ExportApiController::class, 'publications']);
+        Route::get('/export/users', [ExportApiController::class, 'users'])->middleware('role:pi,manager');
     });
 });

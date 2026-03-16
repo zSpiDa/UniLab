@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\Publication;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Http\Resources\PublicationResource;
 
 class PublicationApiController extends Controller
 {
@@ -22,7 +23,10 @@ class PublicationApiController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        //implementare
+        $publication = Publication::create($request->all());
+        return new PublicationResource($publication);
+
     }
 
     /**
@@ -30,7 +34,10 @@ class PublicationApiController extends Controller
      */
     public function show(string $id)
     {
-        //
+        //implementare
+        $publication = Publication::with('projects','authors')->findOrFail($id);
+        return new PublicationResource($publication);
+
     }
 
     /**
@@ -38,7 +45,10 @@ class PublicationApiController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        //implementare
+        $publication = Publication::findOrFail($id);
+        $publication->update($request->all());
+        return new PublicationResource($publication);
     }
 
     /**
@@ -46,6 +56,10 @@ class PublicationApiController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        //implementare
+        $publication = Publication::findOrFail($id);
+        $publication->delete();
+        return response()->json(null, 204);
+
     }
 }
