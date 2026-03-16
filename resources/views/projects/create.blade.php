@@ -3,10 +3,8 @@
 @section('content')
     @php
         $statusMap = [
-            'draft'     => 'Pianificato',
             'planned'   => 'Pianificato',
             'ongoing'   => 'In Corso',
-            'active'    => 'Completato', // PER IL TUO DATABASE ACTIVE SIGNIFICA COMPLETATO!
             'completed' => 'Completato',
         ];
     @endphp
@@ -35,9 +33,9 @@
             <div class="mb-3">
                 <label for="status" class="form-label fw-bold">Stato</label>
                 <select class="form-select" id="status" name="status">
-                    <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Pianificato (Draft)</option>
-                    <option value="ongoing" {{ old('status') == 'ongoing' ? 'selected' : '' }}>In corso (Ongoing)</option>
-                    <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Completato (Active)</option>
+                    <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Pianificato</option>
+                    <option value="ongoing" {{ old('status') == 'ongoing' ? 'selected' : '' }}>In corso</option>
+                    <option value="completed" {{ old('status') == 'completed' ? 'selected' : '' }}>Completato</option>
                 </select>
             </div>
 

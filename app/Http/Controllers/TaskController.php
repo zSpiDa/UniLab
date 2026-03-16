@@ -34,7 +34,6 @@ class TaskController extends Controller
             'status'      => 'required|in:open,in_progress,done',
             'priority'    => 'required|in:low,medium,high',
             'assignee_id' => 'nullable|exists:users,id',
-            // Valideremo il nuovo campo 'target' che ci arriva dal form
             'target'      => 'nullable|string',
         ]);
 
