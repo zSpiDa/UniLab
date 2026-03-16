@@ -39,5 +39,6 @@ class UserResource extends JsonResource
             'role' => $this->role,
             'groups' => $this->groups,
         ];
-        
+    }
+
 }
