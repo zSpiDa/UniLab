@@ -291,29 +291,32 @@
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
                                 <strong>{{ $task->title }}</strong><br>
-                                <small class="text-muted">{{ $task->assignee?->name ?? 'Non assegnato' }}</small>
+                                <small class="text-muted">{{ $task->user?->name ?? 'Non assegnato' }}</small>
                             </div>
-                            <div>
-                                <form method="POST" action="{{ route('tasks.update', $task) }}" class="d-inline">
+
+                            <div class="d-flex align-items-center" style="gap: 10px;">
+                                <form method="POST" action="{{ route('tasks.update', $task) }}" class="m-0 p-0">
                                     @csrf
                                     @method('PUT')
                                     <input type="hidden" name="title" value="{{ $task->title }}">
                                     <input type="hidden" name="description" value="{{ $task->description }}">
                                     <input type="hidden" name="due_date" value="{{ $task->due_date ? \Carbon\Carbon::parse($task->due_date)->format('Y-m-d') : '' }}">
                                     <input type="hidden" name="priority" value="{{ $task->priority }}">
-                                    <select name="status" class="form-select form-select-sm d-inline w-auto" onchange="this.form.submit()">
+
+                                    <input type="hidden" name="target" value="{{ $task->milestone_id ? 'milestone_'.$task->milestone_id : 'project_'.$project->id }}">
+
+                                    <select name="status" class="form-select form-select-sm m-0" style="width: auto; min-width: 130px;" onchange="this.form.submit()">
                                         <option value="open" {{ $task->status == 'open' ? 'selected' : '' }}>Da Fare</option>
                                         <option value="in_progress" {{ $task->status == 'in_progress' ? 'selected' : '' }}>In Corso</option>
                                         <option value="done" {{ $task->status == 'done' ? 'selected' : '' }}>Completato</option>
                                     </select>
                                 </form>
-                            </div>
-                            <div>
-                                <form method="POST" action="{{ route('tasks.destroy', $task) }}" class="d-inline" onsubmit="return confirm('Sei sicuro di voler eliminare questa task?');">
+
+                                <form method="POST" action="{{ route('tasks.destroy', $task) }}" class="m-0 p-0" onsubmit="return confirm('Sei sicuro di voler eliminare questa task?');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm m-0">
+                                        Elimina
                                     </button>
                                 </form>
                             </div>
@@ -343,7 +346,12 @@
                     @foreach($project->publications as $pub)
                         <li class="list-group-item">
                             <strong>{{ $pub->title }}</strong><br>
-                            <small class="text-muted">Autori: {{ $pub->authors->pluck('name')->join(', ') }}</small>
+                            @php
+                                $authorNames = $pub->authors->map(function($author) {
+                                    return $author->user?->name;
+                                })->filter()->join(', ');
+                            @endphp
+                            <small class="text-muted">Autori: {{ $authorNames ?: ($pub->author ?? 'Non specificato') }}</small>
                         </li>
                     @endforeach
                 </ul>
@@ -352,6 +360,4 @@
             @endif
         </div>
     </div>
-        <button type="submit" class="btn btn-primary mb-5">Salva Modifiche al Progetto</button>
-    </form>
 @endsection
