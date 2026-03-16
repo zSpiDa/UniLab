@@ -1,5 +1,6 @@
 @extends('layouts.app')
 @section('content')
+    <!--prova -->
     <a href="{{ route('projects.index') }}" class="btn btn-link p-0 mb-3">← Torna alla lista dei progetti</a>
     <div class="container">
         <h1>Modifica Progetto: {{ $project->title }}</h1>
