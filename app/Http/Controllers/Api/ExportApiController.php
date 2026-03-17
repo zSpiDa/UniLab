@@ -4,6 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Project;
+use App\Models\Publication;
+use App\Models\User;
+use App\Http\Resources\ProjectResource;
+use App\Http\Resources\PublicationResource;
+use App\Http\Resources\UserResource;
 
 class ExportApiController extends Controller
 {
@@ -18,20 +24,31 @@ class ExportApiController extends Controller
             $publications = $project->publications->pluck('title')->implode('|');
             $csv .= "{$project->id},\"{$project->title}\",{$project->status},{$project->start_date},{$project->end_date},\"{$users}\",\"{$publications}\"\n";
         }
-        return response($csv)->header('Content-Type', 'text/csv');
+        return response($csv)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', 'attachment; filename="projects.csv"');
     }
 
     public function publications()
     {
         //implementare senza il pluck, perche' authors non ha un campo name diretto
-        $publications = \App\Models\Publication::with('authors', 'projects')->get();
+        $publications = \App\Models\Publication::with('authors.user', 'projects')->get();
         $csv = "id,title,venue,doi,status,target_deadline,authors,projects\n";
         foreach ($publications as $publication) {
-            $authors = $publication->authors->pluck('name')->implode('|');
+            $authors = $publication->authors
+                ->map(function ($author) {
+                    return optional($author->user)->name;
+                })
+                ->filter()
+                ->implode('|');
+
             $projects = $publication->projects->pluck('title')->implode('|');
-            $csv .= "{$publication->id},\"{$publication->title}\",\"{$publication->venue}\",{$publication->doi},{$publication->status},{$publication->target_deadline},\"{$authors}\",\"{$projects}\"\n";
+
+            $csv .= "{$publication->id},\"{$publication->title}\",\"{$publication->venue}\",\"{$publication->doi}\",\"{$publication->status}\",\"{$publication->target_deadline}\",\"{$authors}\",\"{$projects}\"\n";
         }
-        return response($csv)->header('Content-Type', 'text/csv');
+        return response($csv)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', 'attachment; filename="publications.csv"');
 
     }
 
@@ -46,7 +63,9 @@ class ExportApiController extends Controller
             $tasks = $user->tasks->pluck('title')->implode('|');
             $csv .= "{$user->id},\"{$user->name}\",{$user->email},\"{$group}\",\"{$projects}\",\"{$tasks}\"\n";
         }
-        return response($csv)->header('Content-Type', 'text/csv');
+        return response($csv)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', 'attachment; filename="users.csv"') ;
     }
 
     public function __invoke(Request $request)

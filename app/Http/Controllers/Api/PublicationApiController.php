@@ -13,9 +13,7 @@ class PublicationApiController extends Controller
      * Display a listing of the resource.
      */
     public function index() {
-        return response()->json(
-            Publication::with('projects','authors')->get()
-        );
+        return PublicationResource::collection(Publication::with('projects','authors.user')->get());
     }
 
     /**
@@ -24,8 +22,17 @@ class PublicationApiController extends Controller
     public function store(Request $request)
     {
         //implementare
-        $publication = Publication::create($request->all());
-        return new PublicationResource($publication);
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'type' => 'required|string|max:255',
+            'venue' => 'nullable|string|max:255',
+            'doi' => 'nullable|string|max:255',
+            'status' => 'required|in:draft,submitted,accepted,published',
+            'target_deadline' => 'nullable|date',
+            'author' => 'nullable|string|max:255',
+        ]);
+        $publication = Publication::create($validated);
+        return new PublicationResource($publication->load(['projects', 'authors.user']));
 
     }
 
@@ -35,7 +42,7 @@ class PublicationApiController extends Controller
     public function show(string $id)
     {
         //implementare
-        $publication = Publication::with('projects','authors')->findOrFail($id);
+        $publication = Publication::with('projects','authors.user')->findOrFail($id);
         return new PublicationResource($publication);
 
     }
@@ -47,8 +54,17 @@ class PublicationApiController extends Controller
     {
         //implementare
         $publication = Publication::findOrFail($id);
-        $publication->update($request->all());
-        return new PublicationResource($publication);
+        $validated = $request->validate([
+            'title' => 'string|max:255',
+            'type' => 'string|max:255',
+            'venue' => 'nullable|string|max:255',
+            'doi' => 'nullable|string|max:255',
+            'status' => 'in:draft,submitted,accepted,published',
+            'target_deadline' => 'nullable|date',
+            'author' => 'nullable|string|max:255',
+        ]);
+        $publication->update($validated);
+        return new PublicationResource($publication->load(['projects', 'authors.user']));
     }
 
     /**
@@ -59,7 +75,7 @@ class PublicationApiController extends Controller
         //implementare
         $publication = Publication::findOrFail($id);
         $publication->delete();
-        return response()->json(null, 204);
+        return response()->noContent();
 
     }
 }

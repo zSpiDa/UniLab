@@ -198,7 +198,7 @@
                         const select = document.getElementById('user-select');
                         const userId = select.value;
                         const userName = select.options[select.selectedIndex].text;
-
+                        const userRole = select.options[select.selectedIndex].getAttribute('data-role');
                         if (!userId) return;
 
                         if (document.querySelector(`input[name="users[]"][value="${userId}"]`)) {
