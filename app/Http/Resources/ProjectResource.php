@@ -12,51 +12,82 @@ class ProjectResource extends JsonResource
      *
      * @return array<string, mixed>
      */
-
-    public function toArray($request) {
+    public function toArray($request){
         return [
-            'id' => $this->id,
-            'title' => $this->title,
-            'status' => $this->status,
-            'start_date' => $this->start_date,
-            'end_date' => $this->end_date,
-            'users' => $this->users->collect(function ($user) {
+        'id' => $this->id,
+        'title' => $this->title,
+        'code' => $this->code,
+        'funder' => $this->funder,
+        'status' => $this->status,
+        'start_date' => $this->start_date,
+        'end_date' => $this->end_date,
+        'description' => $this->description,
+        'file_path' => $this->file_path,
+
+        'users' => $this->whenLoaded('users', function () {
+            return $this->users->map(function ($user) {
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'role' => $user->pivot->role,
-                    'effort' => $user->pivot->effort,
+                    'role' => $user->pivot->role ?? null,
+                    'effort' => $user->pivot->effort ?? null,
                 ];
-            }),
-            'publications' => $this->publications->pluck('title'),
-            'milestones' => $this->milestones->pluck('title'),
-            'description' => $this->description,
-            'file_path' => $this->file_path,
-            'code' => $this->code,
-            'funder' => $this->funder,
-            'end_date' => $this->end_date,
-            'group' => $this->group ? $this->group->name : null,
-            'tags' => $this->tags->pluck('name'),
-            'attachments' => $this->attachments->pluck('file_path'),
-            'comments' => $this->comments->pluck('content'),
-            'tasks' => $this->tasks->pluck('title'),
-            'timestamps' => [
-                'created_at' => $this->created_at,
-                'updated_at' => $this->updated_at,
-            ],
-            'links' => [
-                'self' => route('api.projects.show', $this->id),
-                'publications' => route('api.projects.publications.index', $this->id),
-                'milestones' => route('api.projects.milestones.index', $this->id),
-                'users' => route('api.projects.users.index', $this->id),
-                'tasks' => route('api.projects.tasks.index', $this->id),
-            ],
-            'permissions' => [
-                'can_edit' => auth()->user() && auth()->user()->can('update', $this->resource),
-                'can_delete' => auth()->user() && auth()->user()->can('delete', $this->resource),
-            ],
+            });
+        }),
+
+        'publications' => $this->whenLoaded('publications', function () {
+            return $this->publications->map(function ($publication) {
+                return [
+                    'id' => $publication->id,
+                    'title' => $publication->title,
+                    'status' => $publication->status,
+                ];
+            });
+        }),
+
+        'milestones' => $this->whenLoaded('milestones', function () {
+            return $this->milestones->map(function ($milestone) {
+                return [
+                    'id' => $milestone->id,
+                    'title' => $milestone->title,
+                    'due_date' => $milestone->due_date,
+                    'status' => $milestone->status,
+                ];
+            });
+        }),
+
+        'tasks' => $this->whenLoaded('tasks', function () {
+            return $this->tasks->map(function ($task) {
+                return [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'status' => $task->status,
+                    'priority' => $task->priority,
+                    'due_date' => $task->due_date,
+                ];
+            });
+        }),
+
+        'tags' => $this->whenLoaded('tags', function () {
+            return $this->tags->pluck('name');
+        }),
+
+        'attachments' => $this->whenLoaded('attachments', function () {
+            return $this->attachments->pluck('path');
+        }),
+
+        'comments' => $this->whenLoaded('comments', function () {
+            return $this->comments->pluck('body');
+        }),
+
+        'group' => $this->whenLoaded('group', function () {
+            return $this->group ? $this->group->name : null;
+        }),
+
+        'created_at' => $this->created_at,
+        'updated_at' => $this->updated_at,
         ];
-    }
+    }  
 
 }

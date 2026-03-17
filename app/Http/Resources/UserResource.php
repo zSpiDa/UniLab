@@ -14,8 +14,40 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
-    }
+    return [
+        'id' => $this->id,
+        'name' => $this->name,
+        'email' => $this->email,
+        'role' => $this->role,
+        'group' => $this->whenLoaded('group', function () {
+            return $this->group ? [
+                'id' => $this->group->id,
+                'name' => $this->group->name,
+            ] : null;
+        }),
+        'projects' => $this->whenLoaded('projects', function () {
+            return $this->projects->map(function ($project) {
+                return [
+                    'id' => $project->id,
+                    'title' => $project->title,
+                    'role' => $project->pivot->role ?? null,
+                    'effort' => $project->pivot->effort ?? null,
+                ];
+            });
+        }),
+        'tasks' => $this->whenLoaded('tasks', function () {
+            return $this->tasks->map(function ($task) {
+                return [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'status' => $task->status,
+                ];
+            });
+        }),
+        'created_at' => $this->created_at,
+        'updated_at' => $this->updated_at,
+    ];
+}
 
     public function with($request)
     {
@@ -26,19 +58,4 @@ class UserResource extends JsonResource
             ],
         ];
     }
-
-    //espore id, name, email, created_at, updated_at, projects, role, groups
-    public function toArrayWithProjects(Request $request): array
-    {        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'email' => $this->email,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'projects' => $this->projects,
-            'role' => $this->role,
-            'groups' => $this->groups,
-        ];
-    }
-
 }
