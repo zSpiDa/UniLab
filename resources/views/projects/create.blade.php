@@ -1,14 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-    @php
-        $statusMap = [
-            'planned'   => 'Pianificato',
-            'ongoing'   => 'In Corso',
-            'completed' => 'Completato',
-        ];
-    @endphp
-
     <div class="container py-4">
         <h1 class="mb-4">Crea nuovo progetto</h1>
 
@@ -32,10 +24,10 @@
 
             <div class="mb-3">
                 <label for="status" class="form-label fw-bold">Stato</label>
-                <select class="form-select" id="status" name="status">
-                    <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Pianificato</option>
-                    <option value="ongoing" {{ old('status') == 'ongoing' ? 'selected' : '' }}>In corso</option>
-                    <option value="completed" {{ old('status') == 'completed' ? 'selected' : '' }}>Completato</option>
+                <select class="form-select" id="status" name="status" onchange="checkEndDateLimit()">
+                    <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Pianificato (Draft)</option>
+                    <option value="ongoing" {{ old('status') == 'ongoing' ? 'selected' : '' }}>In corso (Ongoing)</option>
+                    <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Completato (Active)</option>
                 </select>
             </div>
 
@@ -51,13 +43,44 @@
 
             <div class="mb-3">
                 <label for="start_date" class="form-label fw-bold">Data inizio</label>
-                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ old('start_date') }}">
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ old('start_date') }}" onchange="checkEndDateLimit()">
             </div>
 
             <div class="mb-3">
                 <label for="end_date" class="form-label fw-bold">Data fine</label>
-                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ old('end_date') }}">
+                <input type="date" class="form-control @error('end_date') is-invalid @enderror" id="end_date" name="end_date" value="{{ old('end_date') }}">
+                @error('end_date')
+                <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
+
+            <script>
+                function checkEndDateLimit() {
+                    const statusSelect = document.getElementById('status');
+                    const startDateInput = document.getElementById('start_date');
+                    const endDateInput = document.getElementById('end_date');
+
+                    const today = new Date().toISOString().split('T')[0];
+                    let minDate = '';
+
+                    if (statusSelect.value === 'ongoing') {
+                        if (startDateInput.value && startDateInput.value > today) {
+                            minDate = startDateInput.value;
+                        } else {
+                            minDate = today;
+                        }
+                    } else {
+                        minDate = startDateInput.value;
+                    }
+
+                    endDateInput.min = minDate;
+
+                    if (endDateInput.value && minDate && endDateInput.value < minDate) {
+                        endDateInput.value = '';
+                    }
+                }
+                document.addEventListener('DOMContentLoaded', checkEndDateLimit);
+            </script>
 
             <div class="mb-3">
                 <label for="description" class="form-label fw-bold">Descrizione</label>
@@ -119,6 +142,7 @@
                     select.value = '';
                 }
             </script>
+
             <div class="mb-4">
                 <h5 class="fw-bold">Milestone</h5>
                 <div id="milestones-container">
@@ -157,7 +181,98 @@
                         milestoneIndex++;
                     }
                 </script>
-            </div> <div class="mb-3">
+            </div>
+
+            {{-- ----------------------------------------------------- --}}
+            {{-- SEZIONE: TASK DINAMICHE                               --}}
+            {{-- ----------------------------------------------------- --}}
+            <div class="card mb-4 border shadow-sm">
+                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                    Crea Task Iniziali per il Progetto
+                    <button type="button" class="btn btn-sm btn-primary" onclick="addTask()">
+                        + Aggiungi Task
+                    </button>
+                </div>
+                <div class="card-body bg-light" id="tasks-container">
+                    <p class="text-muted small mb-0" id="tasks-placeholder">Nessuna task aggiunta. Clicca su "+ Aggiungi Task" per crearne una.</p>
+                </div>
+            </div>
+
+            <script>
+                let taskIndex = 0;
+                // Pre-renderizziamo gli utenti per i menu a tendina delle task
+                const taskUsersOptions = `@foreach($users as $u)<option value="{{ $u->id }}">{{ str_replace("'", "\'", $u->name) }}</option>@endforeach`;
+
+                function addTask() {
+                    const placeholder = document.getElementById('tasks-placeholder');
+                    if(placeholder) placeholder.style.display = 'none';
+
+                    const container = document.getElementById('tasks-container');
+                    const newIndex = taskIndex++;
+
+                    const html = `
+                        <div class="card mb-3 p-3 bg-white border task-row">
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Titolo Task</label>
+                                    <input type="text" name="tasks[new_${newIndex}][title]" class="form-control" placeholder="Es: Analisi dati preliminari..." required>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Assegna a</label>
+                                    <select name="tasks[new_${newIndex}][assignee_id]" class="form-select">
+                                        <option value="">-- Nessuno --</option>
+                                        ${taskUsersOptions}
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Stato</label>
+                                    <select name="tasks[new_${newIndex}][status]" class="form-select">
+                                        <option value="open" selected>Da Fare</option>
+                                        <option value="in_progress">In Corso</option>
+                                        <option value="done">Completato</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Priorità</label>
+                                    <select name="tasks[new_${newIndex}][priority]" class="form-select">
+                                        <option value="low">Bassa</option>
+                                        <option value="medium" selected>Media</option>
+                                        <option value="high">Alta</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Scadenza</label>
+                                    <input type="date" name="tasks[new_${newIndex}][due_date]" class="form-control">
+                                </div>
+
+                                <div class="col-md-11">
+                                    <label class="form-label">Descrizione (opzionale)</label>
+                                    <textarea name="tasks[new_${newIndex}][description]" class="form-control" rows="1" placeholder="Dettagli aggiuntivi..."></textarea>
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button type="button" class="btn btn-outline-danger w-100" onclick="removeTask(this)">
+                                        X
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                }
+
+                function removeTask(button) {
+                    button.closest('.task-row').remove();
+                    if(document.querySelectorAll('.task-row').length === 0) {
+                        document.getElementById('tasks-placeholder').style.display = 'block';
+                    }
+                }
+            </script>
+
+            <div class="mb-3 mt-4">
                 <label for="tags" class="form-label fw-bold">Tags</label>
                 <input type="text" placeholder="Inserisci i tag separati da virgola (es. 'Biologia, Chimica')" class="form-control" id="tags" name="tags" value="{{ old('tags') }}">
             </div>
