@@ -6,6 +6,8 @@ use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use Illuminate\Http\Request;
 
+$query = Project::with(['users','tasks', 'publications', 'milestones', 'tags','attachments','comments.user','group']);
+
 class ProjectApiController extends Controller {
     public function index(Request $r) {
         $query = Project::with('users','tasks','publications');
@@ -16,7 +18,7 @@ class ProjectApiController extends Controller {
 
 
     public function show($id) {
-        $project = Project::with('users','tasks','publications')->find($id);
+        $project = Project::with('users','tasks','publications','tags','attachments','comments.user','group')->find($id);
         if (!$project) {
             return response()->json(['error' => 'Project not found'], 404);
         }
@@ -26,7 +28,7 @@ class ProjectApiController extends Controller {
     public function store(Request $r) {
         $validated = $r->validate([
             'title' => 'required|min:3|max:255',
-            'status' => 'required|in:active,completed,on_hold',
+            'status' => 'required|in:active,ongoing, draft',
             'start_date' => 'nullable|date',
         ]);
         $project = Project::create($validated);
@@ -36,7 +38,7 @@ class ProjectApiController extends Controller {
     public function update(Request $r, Project $project) {
         $validated = $r->validate([
             'title' => 'sometimes|min:3|max:255',
-            'status' => 'sometimes|in:active,completed,on_hold',
+            'status' => 'sometimes|in:active,ongoing, draft',
         ]);
         $project->update($validated);
 
