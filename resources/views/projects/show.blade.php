@@ -18,7 +18,7 @@
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-start">
-                <div>
+                <div class="w-100 me-3">
                     <h2 class="h4 mb-2">{{ $project->title }}</h2>
                     <div class="text-muted small mb-1">
                         <strong>Codice:</strong> {{ $project->code ?? 'n/d' }} |
@@ -36,18 +36,30 @@
                     </div>
 
                     @if($project->tags->isNotEmpty())
-                        <div class="d-flex gap-1 flex-wrap mt-2">
+                        <div class="d-flex gap-1 flex-wrap mt-2 mb-3">
                             @foreach($project->tags as $t)
                                 <span class="badge bg-info text-dark">#{{ $t->name }}</span>
                             @endforeach
                         </div>
                     @endif
+
+                    @if(!empty($project->description))
+                        <div class="mt-3 p-3 bg-light rounded border-start border-4 border-primary">
+                            <h6 class="fw-bold mb-1">Descrizione del Progetto</h6>
+                            <p class="mb-0 text-break" style="font-size: 0.95rem;">
+                                {!! nl2br(e($project->description)) !!}
+                            </p>
+                        </div>
+                    @endif
                 </div>
 
-                <div class="d-flex gap-2">
-                    <a href="{{ route('projects.edit', $project) }}" class="btn btn-warning btn-sm fw-bold">
-                        Modifica
+                <div class="d-flex gap-2 flex-shrink-0">
+                    <a href="{{ route('projects.edit', $project) }}" class="btn btn-warning btn-sm fw-bold shadow-sm">
+                        <i class="bi bi-pencil"></i> Modifica
                     </a>
+                    <button type="button" class="btn btn-danger btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteProjectModal">
+                        <i class="bi bi-trash"></i> Elimina
+                    </button>
                 </div>
             </div>
         </div>
@@ -276,4 +288,26 @@
         </div>
     </div>
 
+    <div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-labelledby="deleteProjectModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteProjectModalLabel">Conferma Eliminazione</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Sei sicuro di voler eliminare definitivamente il progetto <strong>{{ $project->title }}</strong>?<br><br>
+                    Questa operazione non può essere annullata e rimuoverà anche tutti gli allegati, i task e le milestone associati.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <form action="{{ route('projects.destroy', $project) }}" method="POST" class="d-inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">Sì, elimina progetto</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
