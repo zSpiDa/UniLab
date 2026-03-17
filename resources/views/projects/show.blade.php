@@ -167,88 +167,91 @@
         </div>
     </div>
 
-    <div class="card mb-4 shadow-sm border-0">
-        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-            <span>Task del Progetto ({{ $project->tasks->count() }})</span>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                    <tr>
-                        <th>Task</th>
-                        <th>Stato</th>
-                        <th>Priorità</th>
-                        <th>Assegnato a</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @forelse($project->tasks as $task)
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                <span>Task del Progetto ({{ $project->tasks->count() }})</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
                         <tr>
-                            <td>
-                                <div class="fw-bold">{{ $task->title }}</div>
-                                @if($task->due_date)
-                                    <small class="text-muted">Scadenza: {{ \Carbon\Carbon::parse($task->due_date)->format('d/m/Y') }}</small>
-                                @endif
-                            </td>
-                            <td>
-                                @php
-                                    $statusBtnClass = match($task->status) {
-                                        'done', 'completed' => 'btn-outline-success',
-                                        'in_progress', 'ongoing' => 'btn-outline-warning',
-                                        'open', 'todo' => 'btn-outline-danger',
-                                        default => 'btn-outline-secondary'
-                                    };
-                                    $statusLabel = match($task->status) {
-                                        'done', 'completed' => 'Completato',
-                                        'in_progress', 'ongoing' => 'In Corso',
-                                        'open', 'todo' => 'Da Fare',
-                                        default => ucfirst($task->status)
-                                    };
-                                @endphp
-                                <span class="btn btn-sm {{ $statusBtnClass }} fw-bold disabled py-0 px-2" style="opacity: 1; font-size: 0.75rem;">
-                                        {{ $statusLabel }}
-                                    </span>
-                            </td>
-                            <td>
-                                @php
-                                    $prioBtnClass = match($task->priority) {
-                                        'high' => 'btn-outline-danger',
-                                        'medium' => 'btn-outline-warning',
-                                        'low' => 'btn-outline-success',
-                                        default => 'btn-outline-secondary'
-                                    };
-                                    $prioLabel = match($task->priority) {
-                                        'high' => 'Alta',
-                                        'medium' => 'Media',
-                                        'low' => 'Bassa',
-                                        default => 'N/D'
-                                    };
-                                @endphp
-                                <span class="btn btn-sm {{ $prioBtnClass }} fw-bold disabled py-0 px-2" style="opacity: 1; font-size: 0.75rem;">
-                                        {{ $prioLabel }}
-                                    </span>
-                            </td>
-                            <td>
-                                @if($task->user)
-                                    <span class="badge bg-info text-dark">{{ $task->user->name }}</span>
-                                @else
-                                    <span class="text-muted small fst-italic">-- Nessuno --</span>
-                                @endif
-                            </td>
+                            <th>Task</th>
+                            <th>Stato</th>
+                            <th>Priorità</th>
+                            <th>Assegnato a</th>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="text-center py-3 text-muted fst-italic">
-                                Nessuna task associata a questo progetto.
-                            </td>
-                        </tr>
-                    @endforelse
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        @forelse($project->tasks as $task)
+                            <tr>
+                                <td>
+                                    <a href="{{ route('tasks.show', $task) }}" class="fw-bold text-dark text-decoration-none d-block">
+                                        {{ $task->title }}
+                                    </a>
+                                    @if($task->due_date)
+                                        <small class="text-muted">Scadenza: {{ \Carbon\Carbon::parse($task->due_date)->format('d/m/Y') }}</small>
+                                    @endif
+                                </td>
+                                <td>
+                                    @php
+                                        $statusBtnClass = match($task->status) {
+                                            'done', 'completed' => 'btn-outline-success',
+                                            'in_progress', 'ongoing' => 'btn-outline-warning',
+                                            'open', 'todo' => 'btn-outline-danger',
+                                            default => 'btn-outline-secondary'
+                                        };
+                                        $statusLabel = match($task->status) {
+                                            'done', 'completed' => 'Completato',
+                                            'in_progress', 'ongoing' => 'In Corso',
+                                            'open', 'todo' => 'Da Fare',
+                                            default => ucfirst($task->status)
+                                        };
+                                    @endphp
+                                    <span class="btn btn-sm {{ $statusBtnClass }} fw-bold disabled py-0 px-2" style="opacity: 1; font-size: 0.75rem;">
+                                    {{ $statusLabel }}
+                                </span>
+                                </td>
+                                <td>
+                                    @php
+                                        $prioBtnClass = match($task->priority) {
+                                            'high' => 'btn-outline-danger',
+                                            'medium' => 'btn-outline-warning',
+                                            'low' => 'btn-outline-success',
+                                            default => 'btn-outline-secondary'
+                                        };
+                                        $prioLabel = match($task->priority) {
+                                            'high' => 'Alta',
+                                            'medium' => 'Media',
+                                            'low' => 'Bassa',
+                                            default => 'N/D'
+                                        };
+                                    @endphp
+                                    <span class="btn btn-sm {{ $prioBtnClass }} fw-bold disabled py-0 px-2" style="opacity: 1; font-size: 0.75rem;">
+                                    {{ $prioLabel }}
+                                </span>
+                                </td>
+                                <td>
+                                    @if($task->user)
+                                        <span class="badge bg-info text-dark">{{ $task->user->name }}</span>
+                                    @else
+                                        <span class="text-muted small fst-italic">-- Nessuno --</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center py-3 text-muted fst-italic">
+                                    Nessuna task associata a questo progetto.
+                                </td>
+                            </tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
+
 
     <div class="card mb-5 shadow-sm border-0">
         <div class="card-header bg-white fw-bold">
