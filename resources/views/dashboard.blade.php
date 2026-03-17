@@ -145,6 +145,31 @@
                 </div>
             </div>
         </div>
-
+        <div class="col-12 col-md-6">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">Pubblicazioni collegate</div>
+                <div class="card-body p-0">
+                    @forelse($publications->unique('id') as $pub)
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                            <div>
+                                <a href="{{ route('publications.show', $pub) }}" class="fw-semibold text-decoration-none text-dark d-block">
+                                    {{ $pub->title }}
+                                </a>
+                                <small class="text-muted">{{ $pub->project?->title ?? 'Nessun progetto associato' }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-secondary">
+                                    {{ ucfirst($pub->status ?? 'N/A') }}
+                                </span>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="p-3 text-muted text-center">
+                            Nessuna pubblicazione collegata ai tuoi progetti.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
