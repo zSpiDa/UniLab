@@ -145,6 +145,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-12 col-md-6">
             <div class="card h-100 shadow-sm border-0">
                 <div class="card-header bg-white fw-semibold">Pubblicazioni collegate</div>
@@ -155,7 +156,12 @@
                                 <a href="{{ route('publications.show', $pub) }}" class="fw-semibold text-decoration-none text-dark d-block">
                                     {{ $pub->title }}
                                 </a>
-                                <small class="text-muted">{{ $pub->project?->title ?? 'Nessun progetto associato' }}</small>
+                                @php
+                                    $authorNames = $pub->authors->map(function($author) {
+                                        return $author->user?->name;
+                                    })->filter()->join(', ');
+                                @endphp
+                                <small class="text-muted">{{ $authorNames ?: ($pub->author ?? 'Nessun autore assegnato') }}</small>
                             </div>
                             <div class="text-end">
                                 <span class="badge bg-secondary">
