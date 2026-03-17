@@ -1,8 +1,7 @@
 <!-- Aggiornamento delle informazioni del profilo con invio email di conferma-->
 <section>
     <header>
-        <h2 class="h4">Informazioni Profilo</h2>
-        <p>Aggiorna le informazioni del tuo profilo, il tuo indirizzo email e la password</p>
+        <h2 class="h4">Informazioni Profilo e Modifica Profilo</h2>
     </header>
     <form method="POST" action="{{ route('profile.update') }}" class="mt-4">
         @csrf

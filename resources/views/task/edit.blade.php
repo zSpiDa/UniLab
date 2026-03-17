@@ -98,8 +98,8 @@
 
                                 <div class="col-md-6 mb-3">
                                     <label for="assignee_id" class="form-label fw-bold">Assegnato a</label>
-                                    <select class="form-select @error('assignee_id') is-invalid @enderror" id="assignee_id" name="assignee_id">
-                                        <option value="">-- Nessuno --</option>
+                                    <select class="form-select @error('assignee_id') is-invalid @enderror" id="assignee_id" name="assignee_id" required>
+                                        <option value="">-- Seleziona Utente --</option>
                                         @foreach($users as $user)
                                             <option value="{{ $user->id }}" {{ old('assignee_id', $task->assignee_id) == $user->id ? 'selected' : '' }}>
                                                 {{ $user->name }}
