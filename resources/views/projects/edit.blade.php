@@ -1,5 +1,7 @@
 @extends('layouts.app')
 @section('content')
+    <!--prova -->
+    <!--prova -->
     <a href="{{ route('projects.index') }}" class="btn btn-link p-0 mb-3">← Torna alla lista dei progetti</a>
     <div class="container">
         <h1>Modifica Progetto: {{ $project->title }}</h1>
@@ -220,14 +222,15 @@
             </div>
 
             <button type="submit" class="btn btn-primary mb-5">Salva Modifiche al Progetto</button>
-        </form> <div class="card mb-5">
+        </form>
+        <div class="card mb-5">
             <div class="card-header fw-bold">
                 Crea Nuova Task
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ route('tasks.store') }}">
                     @csrf
-                    <input type="hidden" name="project_id" value="{{ $project->id }}">
+                    <input type="hidden" name="target" value="project_{{ $project->id }}">
 
                     <div class="row g-3">
                         <div class="col-md-12">
@@ -293,7 +296,6 @@
                                 <strong>{{ $task->title }}</strong><br>
                                 <small class="text-muted">{{ $task->user?->name ?? 'Non assegnato' }}</small>
                             </div>
-
                             <div class="d-flex align-items-center" style="gap: 10px;">
                                 <form method="POST" action="{{ route('tasks.update', $task) }}" class="m-0 p-0">
                                     @csrf

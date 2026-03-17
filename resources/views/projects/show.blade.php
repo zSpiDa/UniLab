@@ -103,7 +103,9 @@
                 <div class="card-body">
                     @forelse($project->publications as $pb)
                         <div class="border-bottom py-2">
-                            <div class="fw-semibold">{{ $pb->title }}</div>
+                            <a href="{{ route('publications.show', $pb) }}" class="fw-semibold text-decoration-none text-dark d-block">
+                                {{ $pb->title }}
+                            </a>
                             <div class="text-muted small">Status: {{ $pb->status ?? 'n/d' }}</div>
                         </div>
                     @empty
@@ -112,7 +114,6 @@
                 </div>
             </div>
         </div>
-    </div>
 
     <div class="row g-4 mb-4">
         <div class="col-12 col-lg-6">
