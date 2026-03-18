@@ -119,6 +119,70 @@
                     select.value = '';
                 }
             </script>
+
+            {{-- INIZIO SEZIONE TASK INSERITA QUI --}}
+            <div class="card mb-5">
+                <div class="card-header fw-bold">
+                    Crea Nuova Task
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Titolo Task</label>
+                            <input type="text" name="tasks[0][title]" class="form-control" placeholder="Es: Analisi dati preliminari...">
+                        </div>
+
+                        {{-- CAMPO TARGET ADATTATO PER LA PAGINA DI CREAZIONE --}}
+                        <div class="col-md-6">
+                            <label for="target" class="form-label fw-bold">Associa a (Progetto / Milestone)</label>
+                            <select name="tasks[0][target]" id="target" class="form-select">
+                                <option value="new_project" selected>--> Assegna al Nuovo Progetto in Creazione</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Assegna a (Utente)</label>
+                            <select name="tasks[0][assignee_id]" class="form-select">
+                                <option value="">-- Nessuno --</option>
+                                @foreach($users as $u)
+                                    <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Stato</label>
+                            <select name="tasks[0][status]" class="form-select">
+                                <option value="open" selected>Da Fare</option>
+                                <option value="in_progress">In Corso</option>
+                                <option value="done">Completato</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Priorità</label>
+                            <select name="tasks[0][priority]" class="form-select">
+                                <option value="low">Bassa</option>
+                                <option value="medium" selected>Media</option>
+                                <option value="high">Alta</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Scadenza</label>
+                            <input type="date" name="tasks[0][due_date]" class="form-control">
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Descrizione (opzionale)</label>
+                            <textarea name="tasks[0][description]" class="form-control" rows="2" placeholder="Dettagli aggiuntivi..."></textarea>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            {{-- FINE SEZIONE TASK --}}
+
             <div class="mb-4">
                 <h5 class="fw-bold">Milestone</h5>
                 <div id="milestones-container">
@@ -157,8 +221,17 @@
                         milestoneIndex++;
                     }
                 </script>
+            </div>
 
+            <div class="mb-3">
+                <label for="tags" class="form-label fw-bold">Tags</label>
+                <input type="text" placeholder="Inserisci i tag separati da virgola (es. 'Biologia, Chimica')" class="form-control" id="tags" name="tags" value="{{ old('tags') }}">
+            </div>
 
+            <div class="mb-4">
+                <label for="file" class="form-label fw-bold">Allega file PDF</label>
+                <input type="file" class="form-control" id="file" name="file" accept=".pdf">
+            </div>
 
             <button type="submit" class="btn btn-primary">Crea progetto</button>
         </form>
