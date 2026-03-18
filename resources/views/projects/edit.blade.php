@@ -1,7 +1,5 @@
 @extends('layouts.app')
 @section('content')
-    <!--prova -->
-    <!--prova -->
     <a href="{{ route('projects.index') }}" class="btn btn-link p-0 mb-3">← Torna alla lista dei progetti</a>
     <div class="container">
         <h1>Modifica Progetto: {{ $project->title }}</h1>
@@ -12,7 +10,7 @@
             <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
-        <form action="{{ route('projects.update', $project) }}" method="POST" class="mb-4" enctype="multipart/form-data">
+        <form action="{{ route('projects.update', $project) }}" method="POST" class="mb-4" id="project-form" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <div class="mb-3 mt-3">
@@ -41,13 +39,73 @@
 
             <div class="mb-3">
                 <label for="status" class="form-label"><b>Stato</b></label>
-                <select name="status" id="status" class="form-select">
+                <select name="status" id="status" class="form-select" onchange="checkDateLimits()">
                     <option value="">Seleziona stato</option>
                     <option value="active" {{ $project->status === 'active' ? 'selected' : '' }}>Active</option>
                     <option value="ongoing" {{ $project->status === 'ongoing' ? 'selected' : '' }}>Ongoing</option>
                     <option value="draft" {{ $project->status === 'draft' ? 'selected' : '' }}>Draft</option>
                 </select>
             </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="start_date" class="form-label fw-bold">Data inizio</label>
+                    <input type="date" class="form-control @error('start_date') is-invalid @enderror" id="start_date" name="start_date" value="{{ old('start_date', $project->start_date) }}" onchange="checkDateLimits()">
+                    @error('start_date')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="col-md-6">
+                    <label for="end_date" class="form-label fw-bold">Data fine</label>
+                    <input type="date" class="form-control @error('end_date') is-invalid @enderror" id="end_date" name="end_date" value="{{ old('end_date', $project->end_date) }}" onchange="checkDateLimits()">
+                    @error('end_date')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+
+            <script>
+                function checkDateLimits() {
+                    const statusSelect = document.getElementById('status');
+                    const startDateInput = document.getElementById('start_date');
+                    const endDateInput = document.getElementById('end_date');
+
+                    if(!statusSelect || !startDateInput || !endDateInput) return;
+
+                    const today = new Date().toISOString().split('T')[0];
+
+                    // 1. REGOLE PER LA DATA DI INIZIO
+                    if (statusSelect.value === 'draft') {
+                        startDateInput.min = today;
+                        if (startDateInput.value && startDateInput.value < today) {
+                            startDateInput.value = '';
+                        }
+                    } else {
+                        startDateInput.min = '';
+                    }
+
+                    // 2. REGOLE PER LA DATA DI FINE
+                    let minEndDate = '';
+                    if (statusSelect.value === 'ongoing') {
+                        if (startDateInput.value && startDateInput.value > today) {
+                            minEndDate = startDateInput.value;
+                        } else {
+                            minEndDate = today;
+                        }
+                    } else {
+                        minEndDate = startDateInput.value;
+                    }
+
+                    endDateInput.min = minEndDate;
+
+                    if (endDateInput.value && minEndDate && endDateInput.value < minEndDate) {
+                        endDateInput.value = '';
+                    }
+                }
+
+                document.addEventListener('DOMContentLoaded', checkDateLimits);
+            </script>
+
             <div class="mb-3">
                 <div class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -58,12 +116,9 @@
                     </div>
 
                     <div id="milestones-container">
-                        {{-- Loop per le milestone esistenti --}}
                         @foreach($project->milestones as $index => $milestone)
                             <div class="card mb-2 p-3 bg-light border milestone-row">
-                                {{-- ID fondamentale per l'aggiornamento. Se rimosso, il controller cancellerà la milestone --}}
                                 <input type="hidden" name="milestones[{{ $index }}][id]" value="{{ $milestone->id }}">
-
                                 <div class="row g-2">
                                     <div class="col-md-5">
                                         <label class="form-label small text-muted">Titolo</label>
@@ -71,11 +126,11 @@
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label small text-muted">Scadenza</label>
-                                        <input type="date" name="milestones[{{ $index }}][due_date]" class="form-control" value="{{ $milestone->due_date ? \Carbon\Carbon::parse($milestone->due_date)->format('Y-m-d') : '' }}">
+                                        <input type="date" name="milestones[{{ $index }}][due_date]" class="form-control" value="{{ $milestone->due_date ? \Carbon\Carbon::parse($milestone->due_date)->format('Y-m-d') : '' }}" onchange="checkMilestoneDate('{{ $index }}')">
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label small text-muted">Stato</label>
-                                        <select name="milestones[{{ $index }}][status]" class="form-select">
+                                        <select name="milestones[{{ $index }}][status]" class="form-select" onchange="checkMilestoneDate('{{ $index }}')">
                                             <option value="planned" {{ $milestone->status == 'planned' ? 'selected' : '' }}>Pianificato</option>
                                             <option value="ongoing" {{ $milestone->status == 'ongoing' ? 'selected' : '' }}>In Corso</option>
                                             <option value="completed" {{ $milestone->status == 'completed' ? 'selected' : '' }}>Completato</option>
@@ -93,48 +148,73 @@
                 </div>
 
                 <script>
-                    // Inizializziamo il contatore basandoci sul numero attuale di milestone per evitare conflitti di indici
                     let milestoneIndex = {{ $project->milestones->count() }};
+
+                    function checkMilestoneDate(index) {
+                        const statusSelect = document.querySelector(`select[name="milestones[${index}][status]"]`);
+                        const dueDateInput = document.querySelector(`input[name="milestones[${index}][due_date]"]`);
+
+                        if (!statusSelect || !dueDateInput) return;
+
+                        const today = new Date().toISOString().split('T')[0];
+
+                        // Nelle milestone gli stati sono "planned" e "ongoing"
+                        if (statusSelect.value === 'planned' || statusSelect.value === 'ongoing') {
+                            dueDateInput.min = today;
+                            if (dueDateInput.value && dueDateInput.value < today) {
+                                dueDateInput.value = '';
+                            }
+                        } else {
+                            dueDateInput.min = '';
+                        }
+                    }
 
                     function addMilestone() {
                         const container = document.getElementById('milestones-container');
-                        const newIndex = milestoneIndex++; // Incrementa l'indice per la nuova riga
+                        const newIndexStr = 'new_' + milestoneIndex; // Creiamo una stringa come 'new_0'
 
-                        const html = `
-                            <div class="card mb-2 p-3 bg-light border milestone-row">
-                                <div class="row g-2">
-                                    <div class="col-md-5">
-                                        <label class="form-label small text-muted">Titolo</label>
-                                        <input type="text" name="milestones[new_${newIndex}][title]" class="form-control" placeholder="Nuova Milestone" required>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted">Scadenza</label>
-                                        <input type="date" name="milestones[new_${newIndex}][due_date]" class="form-control">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted">Stato</label>
-                                        <select name="milestones[new_${newIndex}][status]" class="form-select">
-                                            <option value="planned" selected>Planned</option>
-                                            <option value="ongoing">Ongoing</option>
-                                            <option value="completed">Completed</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-1 d-flex align-items-end">
-                                        <button type="button" class="btn btn-outline-danger w-100" onclick="removeMilestone(this)">
-                                            X
-                                        </button>
-                                    </div>
-                                </div>
+                        const row = document.createElement('div');
+                        row.className = 'row g-2 mb-2 align-items-end p-3 bg-light border rounded milestone-row';
+
+                        row.innerHTML = `
+                            <div class="col-md-4">
+                                <label class="small fw-bold text-muted">Titolo</label>
+                                <input type="text" class="form-control" name="milestones[${newIndexStr}][title]" placeholder="Nuova Milestone" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small fw-bold text-muted">Data Scadenza</label>
+                                <input type="date" class="form-control" name="milestones[${newIndexStr}][due_date]" onchange="checkMilestoneDate('${newIndexStr}')">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small fw-bold text-muted">Stato</label>
+                                <select class="form-select" name="milestones[${newIndexStr}][status]" onchange="checkMilestoneDate('${newIndexStr}')">
+                                    <option value="planned" selected>Pianificato</option>
+                                    <option value="ongoing">In Corso</option>
+                                    <option value="completed">Completato</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-danger w-100 fw-bold" onclick="removeMilestone(this)">X</button>
                             </div>
                         `;
+                        container.appendChild(row);
 
-                        // Aggiunge l'HTML al contenitore
-                        container.insertAdjacentHTML('beforeend', html);
+                        // Applica il blocco "oggi" da subito alla nuova milestone creata
+                        checkMilestoneDate(newIndexStr);
+
+                        milestoneIndex++;
                     }
 
                     function removeMilestone(button) {
                         button.closest('.milestone-row').remove();
                     }
+
+                    // Controlla le milestone esistenti al caricamento della pagina
+                    document.addEventListener('DOMContentLoaded', function() {
+                        @foreach($project->milestones as $index => $milestone)
+                        checkMilestoneDate('{{ $index }}');
+                        @endforeach
+                    });
                 </script>
 
                 <div class="mb-3">
@@ -186,7 +266,7 @@
                         <select id="user-select" class="form-select">
                             <option value="">-- Seleziona utente da aggiungere --</option>
                             @foreach($users as $user)
-                                <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                <option value="{{ $user->id }}" data-role="{{ $user->role ?? 'Utente' }}">{{ $user->name }}</option>
                             @endforeach
                         </select>
                         <button type="button" class="btn btn-primary" onclick="addMember()">Aggiungi Membro</button>
@@ -198,7 +278,6 @@
                         const select = document.getElementById('user-select');
                         const userId = select.value;
                         const userName = select.options[select.selectedIndex].text;
-                        const userRole = select.options[select.selectedIndex].getAttribute('data-role');
                         if (!userId) return;
 
                         if (document.querySelector(`input[name="users[]"][value="${userId}"]`)) {
@@ -223,6 +302,8 @@
 
             <button type="submit" class="btn btn-primary mb-5">Salva Modifiche al Progetto</button>
         </form>
+
+        {{-- INIZIO SEZIONE TASK --}}
         <div class="card mb-5">
             <div class="card-header fw-bold">
                 Crea Nuova Task
@@ -230,7 +311,6 @@
             <div class="card-body">
                 <form method="POST" action="{{ route('tasks.store') }}">
                     @csrf
-                    <input type="hidden" name="target" value="project_{{ $project->id }}">
 
                     <div class="row g-3">
                         <div class="col-md-12">
@@ -239,7 +319,25 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Assegna a</label>
+                            <label for="target" class="form-label fw-bold">Associa a (Progetto / Milestone)</label>
+                            <select name="target" id="target" class="form-select @error('target') is-invalid @enderror" required>
+                                <option value="">-- Seleziona --</option>
+                                <optgroup label="Progetto: {{ $project->title }}">
+                                    <option value="project_{{ $project->id }}">
+                                        --> Assegna solo al Progetto (Nessuna Milestone)
+                                    </option>
+                                    @foreach($project->milestones as $m)
+                                        <option value="milestone_{{ $m->id }}">
+                                            &nbsp;&nbsp;&nbsp;↳ Milestone: {{ $m->title }}
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            </select>
+                            @error('target') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Assegna a (Utente)</label>
                             <select name="assignee_id" class="form-select">
                                 <option value="">-- Nessuno --</option>
                                 @foreach($users as $u)
@@ -248,16 +346,16 @@
                             </select>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Stato</label>
-                            <select name="status" class="form-select">
+                            <select name="status" id="new_task_status" class="form-select" onchange="checkNewTaskDateLimits()">
                                 <option value="open" selected>Da Fare</option>
                                 <option value="in_progress">In Corso</option>
                                 <option value="done">Completato</option>
                             </select>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Priorità</label>
                             <select name="priority" class="form-select">
                                 <option value="low">Bassa</option>
@@ -266,10 +364,33 @@
                             </select>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Scadenza</label>
-                            <input type="date" name="due_date" class="form-control">
+                            <input type="date" name="due_date" id="new_task_due_date" class="form-control" onchange="checkNewTaskDateLimits()">
                         </div>
+
+                        <script>
+                            function checkNewTaskDateLimits() {
+                                const statusSelect = document.getElementById('new_task_status');
+                                const dueDateInput = document.getElementById('new_task_due_date');
+
+                                if (!statusSelect || !dueDateInput) return;
+
+                                const today = new Date().toISOString().split('T')[0];
+
+                                if (statusSelect.value === 'open' || statusSelect.value === 'in_progress') {
+                                    dueDateInput.min = today;
+
+                                    if (dueDateInput.value && dueDateInput.value < today) {
+                                        dueDateInput.value = '';
+                                    }
+                                } else {
+                                    dueDateInput.min = '';
+                                }
+                            }
+
+                            document.addEventListener('DOMContentLoaded', checkNewTaskDateLimits);
+                        </script>
 
                         <div class="col-md-12">
                             <label class="form-label fw-bold">Descrizione (opzionale)</label>
@@ -295,6 +416,9 @@
                             <div>
                                 <strong>{{ $task->title }}</strong><br>
                                 <small class="text-muted">{{ $task->user?->name ?? 'Non assegnato' }}</small>
+                                @if($task->milestone)
+                                    <span class="badge bg-secondary ms-2">Milestone: {{ $task->milestone->title }}</span>
+                                @endif
                             </div>
                             <div class="d-flex align-items-center" style="gap: 10px;">
                                 <form method="POST" action="{{ route('tasks.update', $task) }}" class="m-0 p-0">
@@ -306,7 +430,6 @@
                                     <input type="hidden" name="priority" value="{{ $task->priority }}">
 
                                     <input type="hidden" name="target" value="{{ $task->milestone_id ? 'milestone_'.$task->milestone_id : 'project_'.$project->id }}">
-
                                     <select name="status" class="form-select form-select-sm m-0" style="width: auto; min-width: 130px;" onchange="this.form.submit()">
                                         <option value="open" {{ $task->status == 'open' ? 'selected' : '' }}>Da Fare</option>
                                         <option value="in_progress" {{ $task->status == 'in_progress' ? 'selected' : '' }}>In Corso</option>
@@ -330,18 +453,7 @@
             @endif
         </div>
 
-        {{-- SEZIONE TAG AGGIORNATA --}}
-        <div class="mb-4 border-t pt-4">
-            <h5>Tag del Progetto</h5>
-            <div class="mb-3">
-                <label for="tags" class="form-label small text-muted">Inserisci i tag separati da virgola o premi invio</label>
-                {{-- Usiamo l'implode per mostrare i tag esistenti nel campo di testo --}}
-                <input type="text" name="tags" id="tags-input" class="form-control"
-                       value="{{ old('tags', $project->tags->pluck('name')->implode(',')) }}"
-                       placeholder="Aggiungi tag...">
-            </div>
-        </div>
-        <div class="mb-3">
+        <div class="mb-3 border-top pt-4 mt-4">
             <h5>Pubblicazioni</h5>
             @if($project->publications->count() > 0)
                 <ul class="list-group">

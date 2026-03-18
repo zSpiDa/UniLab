@@ -10,14 +10,14 @@ class Task extends Model
     use HasFactory;
 
     protected $fillable = [
-        'project_id',
-        'milestone_id',
-        'assignee_id',
         'title',
         'description',
         'due_date',
         'status',
-        'priority'
+        'priority',
+        'assignee_id',
+        'project_id',
+        'milestone_id'
     ];
 
     // Relazione: Una task appartiene a un Progetto

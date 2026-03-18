@@ -11,6 +11,7 @@ use App\Models\Publication;
 use App\Models\Attachment;
 use App\Models\Comment;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class ProjectController extends Controller
 {
@@ -65,13 +66,21 @@ class ProjectController extends Controller
 
     public function store(Request $request)
     {
+        // 1. Regole base per la data di fine
+        $endDateRules = ['nullable', 'date', 'after_or_equal:start_date'];
+
+        // 2. Controllo dinamico: se è in corso, non può essere nel passato
+        if ($request->status === 'ongoing') {
+            $endDateRules[] = 'after_or_equal:today';
+        }
+
         $validated = $request->validate([
             'title'       => 'required|string|max:255',
             'status'      => 'required|string|max:100',
             'code'        => 'required|string|max:255',
             'funder'      => 'required|string|max:255',
             'start_date'  => 'required|date',
-            'end_date'    => 'nullable|date|after_or_equal:start_date',
+            'end_date'    => $endDateRules, // Applichiamo le regole dinamiche
             'description' => 'required|string',
             'tags'         => 'nullable|string',
             'milestones'   => 'nullable|array',
@@ -79,71 +88,97 @@ class ProjectController extends Controller
             'tasks'        => 'nullable|array',
             'users'        => 'nullable|array',
             'users.*'      => 'exists:users,id',
+            'file'         => 'nullable|mimes:pdf|max:20480',
+        ], [
+            // Messaggio di errore personalizzato
+            'end_date.after_or_equal' => 'La data di fine deve essere successiva all\'inizio. Se il progetto è "In Corso", non può essere una data passata.'
         ]);
 
         $tagsInput = $validated['tags'] ?? null;
         $usersInput = $validated['users'] ?? [];
 
+        // Rimuoviamo i campi che non appartengono direttamente alla tabella projects
         unset($validated['tags'], $validated['file'], $validated['milestones'], $validated['publications'], $validated['tasks'], $validated['users']);
 
-        $project = Project::create($validated);
+        DB::transaction(function () use ($validated, $request, $tagsInput, $usersInput) {
 
-        $syncData = [];
+            $project = Project::create($validated);
 
-        foreach ($usersInput as $userId) {
-            $userRole = User::find($userId)->role ?? 'collaborator';
-            $syncData[$userId] = ['role' => $userRole];
-        }
+            // --- GESTIONE MEMBRI ---
+            $syncData = [];
+            foreach ($usersInput as $userId) {
+                $userRole = User::find($userId)->role ?? 'collaborator';
+                $syncData[$userId] = ['role' => $userRole];
+            }
+            $project->users()->sync($syncData);
 
-        $project->users()->sync($syncData);
-        // --------------------------
+            // --- GESTIONE FILE ---
+            if ($request->hasFile('file')) {
+                $path = $request->file('file')->store('projects', 'public');
+                $project->attachments()->create([
+                    'path' => $path,
+                    'name' => $request->file('file')->getClientOriginalName(),
+                    'uploaded_by' => auth()->id(),
+                ]);
+            }
 
-        if ($request->hasFile('file')) {
-            $path = $request->file('file')->store('projects', 'public');
-            $project->attachments()->create([
-                'path' => $path,
-                'name' => $request->file('file')->getClientOriginalName(),
-                'uploaded_by' => auth()->id(),
-            ]);
-        }
+            // --- GESTIONE TAG ---
+            if ($tagsInput) {
+                $tagNames = array_map('trim', explode(',', $tagsInput));
+                $tagIds = [];
+                foreach ($tagNames as $name) {
+                    if(!empty($name)){
+                        $tagIds[] = Tag::firstOrCreate(['name' => $name])->id;
+                    }
+                }
+                $project->tags()->sync($tagIds);
+            }
 
-        if ($tagsInput) {
-            $tagNames = array_map('trim', explode(',', $tagsInput));
-            $tagIds = [];
-            foreach ($tagNames as $name) {
-                if(!empty($name)){
-                    $tagIds[] = Tag::firstOrCreate(['name' => $name])->id;
+            // --- GESTIONE MILESTONE ---
+            if ($request->filled('milestones')) {
+                foreach ($request->milestones as $m) {
+                    if(is_array($m)) {
+                        $project->milestones()->create([
+                            'title'    => $m['title'] ?? 'Milestone',
+                            'due_date' => $m['due_date'] ?? null,
+                            'status'   => $m['status'] ?? 'active',
+                        ]);
+                    }
                 }
             }
-            $project->tags()->sync($tagIds);
-        }
 
-        if ($request->filled('milestones')) {
-            foreach ($request->milestones as $m) {
-                if(is_array($m)) {
-                    $project->milestones()->create([
-                        'title'    => $m['title'] ?? 'Milestone',
-                        'due_date' => $m['due_date'] ?? null,
-                        'status'   => $m['status'] ?? 'active',
-                    ]);
+            // --- GESTIONE TASK ---
+            if ($request->has('tasks') && is_array($request->tasks)) {
+                foreach ($request->tasks as $taskData) {
+                    if (!empty($taskData['title'])) {
+                        $project->tasks()->create([
+                            'title'       => $taskData['title'],
+                            'description' => $taskData['description'] ?? null,
+                            'status'      => $taskData['status'] ?? 'open',
+                            'priority'    => $taskData['priority'] ?? 'medium',
+                            'due_date'    => !empty($taskData['due_date']) ? $taskData['due_date'] : null,
+                            'assignee_id' => !empty($taskData['assignee_id']) ? $taskData['assignee_id'] : null,
+                        ]);
+                    }
                 }
             }
-        }
 
-        if ($request->filled('publications')) {
-            $items = array_map('trim', explode(',', $request->publications));
-            foreach ($items as $item) {
-                $parts = array_map('trim', explode('|', $item));
-                if (count($parts) >= 1 && !empty($parts[0])) {
-                    $publication = Publication::create([
-                        'title'  => $parts[0],
-                        'status' => $parts[1] ?? 'published',
-                        'author' => $parts[2] ?? null,
-                    ]);
-                    $project->publications()->attach($publication->id);
+            // --- GESTIONE PUBBLICAZIONI ---
+            if ($request->filled('publications')) {
+                $items = array_map('trim', explode(',', $request->publications));
+                foreach ($items as $item) {
+                    $parts = array_map('trim', explode('|', $item));
+                    if (count($parts) >= 1 && !empty($parts[0])) {
+                        $publication = Publication::create([
+                            'title'  => $parts[0],
+                            'status' => $parts[1] ?? 'published',
+                            'author' => $parts[2] ?? null,
+                        ]);
+                        $project->publications()->attach($publication->id);
+                    }
                 }
             }
-        }
+        });
 
         return redirect()->route('projects.index')->with('success', 'Progetto creato con successo!');
     }
@@ -166,111 +201,110 @@ class ProjectController extends Controller
             abort(403, 'Non puoi modificare un progetto di cui non fai parte.');
         }
 
+        // 1. Regole base per la data di fine
+        $endDateRules = ['nullable', 'date', 'after_or_equal:start_date'];
+
+        // 2. Controllo dinamico
+        if ($request->status === 'ongoing') {
+            $endDateRules[] = 'after_or_equal:today';
+        }
+
         $validated = $request->validate([
             'title'       => 'required|string|max:255',
             'status'      => 'required|string|max:100',
             'code'        => 'nullable|string|max:255',
             'funder'      => 'nullable|string|max:255',
             'start_date'  => 'nullable|date',
-            'end_date'    => 'nullable|date|after_or_equal:start_date',
+            'end_date'    => $endDateRules,
             'description' => 'nullable|string',
             'tags'        => 'nullable|string',
-            'milestones'   => 'nullable|array',
+            'milestones'  => 'nullable|array',
             'file'        => 'nullable|mimes:pdf|max:20480',
-            'tasks'        => 'nullable|array',
-            'users'        => 'nullable|array',
-            'users.*'      => 'exists:users,id',
+            'tasks'       => 'nullable|array',
+            'users'       => 'nullable|array',
+            'users.*'     => 'exists:users,id',
+        ], [
+            'end_date.after_or_equal' => 'La data di fine deve essere successiva all\'inizio. Se il progetto è "In Corso", non può essere una data passata.'
         ]);
 
         $tagsInput = $validated['tags'] ?? null;
         $usersInput = $validated['users'] ?? [];
 
-        unset($validated['tags'], $validated['users']);
+        unset($validated['tags'], $validated['users'], $validated['milestones'], $validated['tasks'], $validated['file']);
 
-        $project->update($validated);
+        DB::transaction(function () use ($validated, $request, $project, $tagsInput, $usersInput) {
 
-        // --- AGGIORNAMENTO MEMBRI ---
-        $syncData = [];
+            $project->update($validated);
 
-        if ($request->has('users')) {
-            foreach ($usersInput as $userId) {
-                $userRole = User::find($userId)->role ?? 'collaborator';
-                $syncData[$userId] = ['role' => $userRole];
-            }
-        }
-        $project->users()->sync($syncData);
-        // ----------------------------
-
-        if ($tagsInput !== null) {
-            $tagNames = array_map('trim', explode(',', $tagsInput));
-            $tagIds = [];
-            foreach ($tagNames as $name) {
-                if(!empty($name)) {
-                    $tagIds[] = Tag::firstOrCreate(['name' => $name])->id;
+            // --- AGGIORNAMENTO MEMBRI ---
+            $syncData = [];
+            if ($request->has('users')) {
+                foreach ($usersInput as $userId) {
+                    $userRole = User::find($userId)->role ?? 'collaborator';
+                    $syncData[$userId] = ['role' => $userRole];
                 }
             }
-            $project->tags()->sync($tagIds);
-        }
+            $project->users()->sync($syncData);
 
-        $sentIds = collect($request->input('milestones', []))->pluck('id')->filter()->toArray();
-        $project->milestones()->whereNotIn('id', $sentIds)->delete();
+            // --- AGGIORNAMENTO TAG ---
+            if ($tagsInput !== null) {
+                $tagNames = array_map('trim', explode(',', $tagsInput));
+                $tagIds = [];
+                foreach ($tagNames as $name) {
+                    if(!empty($name)) {
+                        $tagIds[] = Tag::firstOrCreate(['name' => $name])->id;
+                    }
+                }
+                $project->tags()->sync($tagIds);
+            }
 
-        if ($request->has('milestones')) {
-            foreach ($request->milestones as $m) {
-                if (isset($m['id']) && $m['id']) {
-                    $milestone = $project->milestones()->find($m['id']);
-                    if ($milestone) {
-                        $milestone->update([
+            // --- AGGIORNAMENTO MILESTONE ---
+            $sentIds = collect($request->input('milestones', []))->pluck('id')->filter()->toArray();
+            $project->milestones()->whereNotIn('id', $sentIds)->delete();
+
+            if ($request->has('milestones')) {
+                foreach ($request->milestones as $m) {
+                    if (isset($m['id']) && $m['id']) {
+                        $milestone = $project->milestones()->find($m['id']);
+                        if ($milestone) {
+                            $milestone->update([
+                                'title'    => $m['title'],
+                                'due_date' => $m['due_date'],
+                                'status'   => $m['status'],
+                            ]);
+                        }
+                    } else {
+                        $project->milestones()->create([
                             'title'    => $m['title'],
                             'due_date' => $m['due_date'],
-                            'status'   => $m['status'],
+                            'status'   => $m['status'] ?? 'active',
                         ]);
                     }
-                } else {
-                    $project->milestones()->create([
-                        'title'    => $m['title'],
-                        'due_date' => $m['due_date'],
-                        'status'   => $m['status'] ?? 'active',
-                    ]);
                 }
             }
-        }
 
-        if ($request->hasFile('file')) {
-            $path = $request->file('file')->store('projects', 'public');
-            $project->attachments()->create([
-                'path' => $path,
-                'name' => $request->file('file')->getClientOriginalName(),
-                'uploaded_by' => auth()->id(),
-            ]);
-        } else {
-            if ($request->filled('delete_attachments')) {
-                $idsToDelete = $request->input('delete_attachments');
-                $attachmentsToDelete = $project->attachments()->whereIn('id', $idsToDelete)->get();
+            // --- GESTIONE FILE ---
+            if ($request->hasFile('file')) {
+                $path = $request->file('file')->store('projects', 'public');
+                $project->attachments()->create([
+                    'path' => $path,
+                    'name' => $request->file('file')->getClientOriginalName(),
+                    'uploaded_by' => auth()->id(),
+                ]);
+            } else {
+                if ($request->filled('delete_attachments')) {
+                    $idsToDelete = $request->input('delete_attachments');
+                    $attachmentsToDelete = $project->attachments()->whereIn('id', $idsToDelete)->get();
 
-                foreach ($attachmentsToDelete as $attachment) {
-                    if (Storage::disk('public')->exists($attachment->path)) {
-                        Storage::disk('public')->delete($attachment->path);
+                    foreach ($attachmentsToDelete as $attachment) {
+                        if (Storage::disk('public')->exists($attachment->path)) {
+                            Storage::disk('public')->delete($attachment->path);
+                        }
+                        $attachment->delete();
                     }
-                    $attachment->delete();
                 }
             }
-        }
-
-        unset($validated['tasks']);
-        if ($request->has('tasks')) {
-            foreach ($request->tasks as $t) {
-                if(is_array($t)) {
-                    $project->tasks()->create([
-                        'title'       => $t['title'] ?? 'Task',
-                        'description' => $t['description'] ?? null,
-                        'due_date'    => $t['due_date'] ?? null,
-                        'status'      => $t['status'] ?? 'open',
-                        'priority'    => $t['priority'] ?? 'medium',
-                    ]);
-                }
-            }
-        }
+        });
 
         return redirect()->route('projects.show', $project)->with('success', 'Progetto aggiornato correttamente.');
     }
