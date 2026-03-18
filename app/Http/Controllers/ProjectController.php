@@ -10,6 +10,7 @@ use App\Models\Milestone;
 use App\Models\Publication;
 use App\Models\Attachment;
 use App\Models\Comment;
+use App\Models\Task; // <-- AGGIUNTO PER POTER CREARE LE TASK
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
@@ -96,11 +97,12 @@ class ProjectController extends Controller
 
         $tagsInput = $validated['tags'] ?? null;
         $usersInput = $validated['users'] ?? [];
+        $tasksInput = $validated['tasks'] ?? []; // <-- PRENDIAMO I DATI DELLA TASK
 
         // Rimuoviamo i campi che non appartengono direttamente alla tabella projects
         unset($validated['tags'], $validated['file'], $validated['milestones'], $validated['publications'], $validated['tasks'], $validated['users']);
 
-        DB::transaction(function () use ($validated, $request, $tagsInput, $usersInput) {
+        DB::transaction(function () use ($validated, $request, $tagsInput, $usersInput, $tasksInput) {
 
             $project = Project::create($validated);
 
@@ -147,9 +149,9 @@ class ProjectController extends Controller
                 }
             }
 
-            // --- GESTIONE TASK ---
-            if ($request->has('tasks') && is_array($request->tasks)) {
-                foreach ($request->tasks as $taskData) {
+            // --- GESTIONE TASK (MODIFICATA PER FUNZIONARE) ---
+            if (!empty($tasksInput)) {
+                foreach ($tasksInput as $taskData) {
                     if (!empty($taskData['title'])) {
                         $project->tasks()->create([
                             'title'       => $taskData['title'],

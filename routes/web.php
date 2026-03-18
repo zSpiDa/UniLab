@@ -99,7 +99,14 @@ Route::middleware(['auth', 'role:pi,manager'])->group(function () {
 
 // Rotta per SALVARE un commento (collegato al progetto)
 Route::post('/projects/{project}/comments', [CommentsController::class, 'store'])->name('projects.comments.store');
+// Rotta per SALVARE un commento (collegato al progetto)
+Route::post('/projects/{project}/comments', [CommentsController::class, 'store'])->name('projects.comments.store');
 
+// NUOVA ROTTA: SALVARE un commento (collegato alla task)
+Route::post('/tasks/{task}/comments', [CommentsController::class, 'storeTaskComment'])->name('tasks.comments.store');
+
+// Rotta per ELIMINARE un commento
+Route::delete('/comments/{comment}', [CommentsController::class, 'destroy'])->name('comments.destroy');
 // Rotta per ELIMINARE un commento
 Route::delete('/comments/{comment}', [CommentsController::class, 'destroy'])->name('comments.destroy');
 

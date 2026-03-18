@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Comment;
 
 class Task extends Model
 {
@@ -37,5 +38,9 @@ class Task extends Model
     {
         // Specifichiamo 'assignee_id' perché è il nome della colonna nel DB
         return $this->belongsTo(User::class, 'assignee_id');
+    }
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable');
     }
 }

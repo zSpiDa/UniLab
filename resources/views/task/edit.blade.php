@@ -119,6 +119,39 @@
                         </form>
                     </div>
                 </div>
+
+                <div class="card mt-4">
+                    <div class="card-header fw-bold">
+                        Gestione Commenti
+                    </div>
+                    <div class="card-body">
+                        @if($task->comments && $task->comments->count() > 0)
+                            <ul class="list-group list-group-flush">
+                                @foreach($task->comments as $c)
+                                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="small text-primary">{{ optional($c->user)->name ?? 'Utente' }}</strong>
+                                            <small class="text-muted ms-1">({{ $c->created_at->format('d/m/Y H:i') }})</small>
+                                            <div class="mt-1 small">{{ $c->body }}</div>
+                                        </div>
+
+                                        @if(auth()->id() === $c->user_id)
+                                            <form action="{{ route('comments.destroy', $c->id) }}" method="POST" class="m-0 p-0" onsubmit="return confirm('Sei sicuro di voler eliminare questo commento?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    Elimina
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-muted small fst-italic mb-0">Nessun commento presente per questa task.</p>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
     </div>
