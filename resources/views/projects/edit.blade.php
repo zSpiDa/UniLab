@@ -254,16 +254,7 @@
                 </script>
             </div>
 
-            {{-- SEZIONE TAG SPOSTATA DENTRO IL FORM PRINCIPALE --}}
-            <div class="mb-4 border-top pt-4">
-                <h5>Tag del Progetto</h5>
-                <div class="mb-3">
-                    <label for="tags-input" class="form-label small text-muted">Inserisci i tag separati da virgola</label>
-                    <input type="text" name="tags" form="project-form" id="tags-input" class="form-control"
-                           value="{{ old('tags', $project->tags->pluck('name')->implode(',')) }}"
-                           placeholder="Aggiungi tag...">
-                </div>
-            </div>
+
 
             <button type="submit" class="btn btn-primary mb-5">Salva Modifiche al Progetto</button>
         </form>

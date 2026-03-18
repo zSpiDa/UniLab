@@ -157,15 +157,8 @@
                         milestoneIndex++;
                     }
                 </script>
-            </div> <div class="mb-3">
-                <label for="tags" class="form-label fw-bold">Tags</label>
-                <input type="text" placeholder="Inserisci i tag separati da virgola (es. 'Biologia, Chimica')" class="form-control" id="tags" name="tags" value="{{ old('tags') }}">
-            </div>
 
-            <div class="mb-4">
-                <label for="file" class="form-label fw-bold">Allega file PDF</label>
-                <input type="file" class="form-control" id="file" name="file" accept=".pdf">
-            </div>
+
 
             <button type="submit" class="btn btn-primary">Crea progetto</button>
         </form>
