@@ -27,7 +27,7 @@
             <select class="form-select" id="status" name="status" required>
                 <option value="">Seleziona uno stato</option>
                 <option value="drafting" {{ $publication->status == 'drafting' ? 'selected' : '' }}>Bozza</option>
-                <option value="submitted" {{ $publication->status == 'submitted' ? 'selected' : '' }}>Sottomesso</option>
+                <option value="submitted" {{ $publication->status == 'submitted' ? 'selected' : '' }}>Inviato</option>
                 <option value="accepted" {{ $publication->status == 'accepted' ? 'selected' : '' }}>Accettato</option>
                 <option value="published" {{ $publication->status == 'published' ? 'selected' : '' }}>Pubblicato</option>
             </select>

@@ -89,9 +89,7 @@ class TaskController extends Controller
             'due_date'    => 'nullable|date',
             'status'      => 'required|in:open,in_progress,done',
             'priority'    => 'required|in:low,medium,high',
-            // MODIFICA QUI: Da nullable a required
             'assignee_id' => 'required|exists:users,id',
-            // Valideremo il nuovo campo 'target' che ci arriva dal form
             'target'      => 'nullable|string',
         ]);
 
