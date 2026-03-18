@@ -21,7 +21,7 @@ class PublicationFactory extends Factory
             'type'  => $this->faker->randomElement(['journal','conference','workshop']),
             'venue' => $this->faker->randomElement(['TOCHI','IJHCS','CHI','CSCW','SOUPS']),
             'doi'   => null,
-            'status' => 'drafting', // usa solo se la tua migration lo consente
+            'status' => 'draft', // usa solo se la tua migration lo consente
             'target_deadline' => null,
         ];
     }
