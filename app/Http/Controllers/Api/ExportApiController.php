@@ -3,73 +3,104 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\Publication;
 use App\Models\User;
-use App\Http\Resources\ProjectResource;
-use App\Http\Resources\PublicationResource;
-use App\Http\Resources\UserResource;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportApiController extends Controller
 {
-    //implementare export in csv di tutti i progetti, pubblicazioni e utenti con le relative relazioni
-    public function projects()
+    public function projects(): StreamedResponse
     {
-        //implementare
-        $projects = \App\Models\Project::with('users', 'publications')->get();
-        $csv = "id,title,status,start_date,end_date,users,publications\n";
-        foreach ($projects as $project) {
-            $users = $project->users->pluck('name')->implode('|');
-            $publications = $project->publications->pluck('title')->implode('|');
-            $csv .= "{$project->id},\"{$project->title}\",{$project->status},{$project->start_date},{$project->end_date},\"{$users}\",\"{$publications}\"\n";
-        }
-        return response($csv)
-            ->header('Content-Type', 'text/csv')
-            ->header('Content-Disposition', 'attachment; filename="projects.csv"');
+        $projects = Project::with('users', 'publications')->get();
+
+        $rows = $projects->map(function ($project) {
+            return [
+                $project->id,
+                $project->title,
+                $project->status,
+                $project->start_date,
+                $project->end_date,
+                $project->users->pluck('name')->implode('|'),
+                $project->publications->pluck('title')->implode('|'),
+            ];
+        });
+
+        return $this->streamCsv(
+            'projects.csv',
+            ['id', 'title', 'status', 'start_date', 'end_date', 'users', 'publications'],
+            $rows
+        );
     }
 
-    public function publications()
+    public function publications(): StreamedResponse
     {
-        //implementare senza il pluck, perche' authors non ha un campo name diretto
-        $publications = \App\Models\Publication::with('authors.user', 'projects')->get();
-        $csv = "id,title,venue,doi,status,target_deadline,authors,projects\n";
-        foreach ($publications as $publication) {
+        $publications = Publication::with('authors.user', 'projects')->get();
+
+        $rows = $publications->map(function ($publication) {
             $authors = $publication->authors
-                ->map(function ($author) {
-                    return optional($author->user)->name;
-                })
+                ->map(fn ($author) => optional($author->user)->name)
                 ->filter()
                 ->implode('|');
 
-            $projects = $publication->projects->pluck('title')->implode('|');
+            return [
+                $publication->id,
+                $publication->title,
+                $publication->venue,
+                $publication->doi,
+                $publication->status,
+                $publication->target_deadline,
+                $authors,
+                $publication->projects->pluck('title')->implode('|'),
+            ];
+        });
 
-            $csv .= "{$publication->id},\"{$publication->title}\",\"{$publication->venue}\",\"{$publication->doi}\",\"{$publication->status}\",\"{$publication->target_deadline}\",\"{$authors}\",\"{$projects}\"\n";
-        }
-        return response($csv)
-            ->header('Content-Type', 'text/csv')
-            ->header('Content-Disposition', 'attachment; filename="publications.csv"');
-
+        return $this->streamCsv(
+            'publications.csv',
+            ['id', 'title', 'venue', 'doi', 'status', 'target_deadline', 'authors', 'projects'],
+            $rows
+        );
     }
 
-    public function users()
+    public function users(): StreamedResponse
     {
-        //implementare
-        $users = \App\Models\User::with('group', 'projects', 'tasks')->get();
-        $csv = "id,name,email,group,projects,tasks\n";
-        foreach ($users as $user) {
-            $group = $user->group ? $user->group->name : '';
-            $projects = $user->projects->pluck('title')->implode('|');
-            $tasks = $user->tasks->pluck('title')->implode('|');
-            $csv .= "{$user->id},\"{$user->name}\",{$user->email},\"{$group}\",\"{$projects}\",\"{$tasks}\"\n";
-        }
-        return response($csv)
-            ->header('Content-Type', 'text/csv')
-            ->header('Content-Disposition', 'attachment; filename="users.csv"') ;
+        $users = User::with('group', 'projects', 'tasks')->get();
+
+        $rows = $users->map(function ($user) {
+            return [
+                $user->id,
+                $user->name,
+                $user->email,
+                optional($user->group)->name,
+                $user->projects->pluck('title')->implode('|'),
+                $user->tasks->pluck('title')->implode('|'),
+            ];
+        });
+
+        return $this->streamCsv(
+            'users.csv',
+            ['id', 'name', 'email', 'group', 'projects', 'tasks'],
+            $rows
+        );
     }
 
-    public function __invoke(Request $request)
+    private function streamCsv(string $filename, array $header, iterable $rows): StreamedResponse
     {
-        return response()->json(['message' => 'Export API']);
+        return response()->streamDownload(function () use ($header, $rows) {
+            $out = fopen('php://output', 'w');
+
+            // BOM UTF-8: migliora apertura in Excel
+            fwrite($out, "\xEF\xBB\xBF");
+
+            fputcsv($out, $header);
+
+            foreach ($rows as $row) {
+                fputcsv($out, $row); // escaping robusto automatico
+            }
+
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 }

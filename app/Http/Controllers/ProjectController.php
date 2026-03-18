@@ -337,4 +337,26 @@ class ProjectController extends Controller
         $out .= '</ul>';
         return $out;
     }
+
+    public function exportCsv(Project $project)
+    {
+        $project->load(['users', 'publications']);
+
+        return response()->streamDownload(function() use ($project) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['project_id', 'title', 'status', 'users', 'publications']);
+            fputcsv($out, [
+                $project->id,
+                $project->title,
+                $project->status,
+                $project->users->pluck('name')->implode('|'),
+                $project->publications->pluck('title')->implode('|'),
+            ]);
+            fclose($out);
+        }, 'project_'.$project->id.'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename=project_'.$project->id.'.csv',
+        ]);
+    }
 }

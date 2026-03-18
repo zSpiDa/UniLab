@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->string('type')->nullable();
             $table->string('venue')->nullable();
             $table->string('doi')->nullable();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('draft');
             $table->date('target_deadline')->nullable();
             $table->timestamps();
             $table->string('author')->nullable(); // Campo per memorizzare l'autore principale o una rappresentazione testuale degli autori
