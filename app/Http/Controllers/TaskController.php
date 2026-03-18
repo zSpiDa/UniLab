@@ -101,7 +101,6 @@ class TaskController extends Controller
 
                 $validated['project_id'] = $milestone->project_id;
                 $validated['milestone_id'] = $milestone->id;
-
             } elseif (str_starts_with($request->target, 'project_')) {
                 $validated['project_id'] = str_replace('project_', '', $request->target);
                 $validated['milestone_id'] = null;

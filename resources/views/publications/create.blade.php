@@ -1,132 +1,137 @@
 @extends('layouts.app')
 
 @section('content')
+    <div class="container py-4">
+        <h1 class="mb-4">Crea una nuova pubblicazione</h1>
 
-<!-- Creazione di una nuova pubblicazione con tutti i campi presi dal database -->
-<div class="container">
-    <h1>Crea una nuova pubblicazione</h1>
-    <form action="{{ route('publications.store') }}" method="POST">
-        @csrf
-        <div class="mb-3">
-            <label for="title" class="b form-label"><strong>Titolo</strong></label>
-            <input type="text" class="form-control" id="title" name="title" required>
-        </div>
-        <!--tipo di pubblicazione senza form-->
-        <div class="mb-3">
-            <label for="type" class="form-label"><strong>Tipo di pubblicazione</strong></label>
-            <input type="text" class="form-control" id="type" name="type" required>
-        </div>
-        <!--luogo della pubblicazione (venue) -->
-        <div class="mb-3">
-            <label for="venue" class="form-label"><strong>Luogo di pubblicazione</strong></label>
-            <input type="text" class="form-control" id="venue" name="venue" required>
-        </div>
-        <!-- DOI -->
-        <div class="mb-3">
-            <label for="doi" class="form-label"><strong>DOI</strong></label>
-            <input type="text" class="form-control" id="doi" name="doi" required>
-        </div>
-        <!-- stato della pubblicazione -->
-        <div class="mb-3">
-            <label for="status" class="form-label"><strong>Stato</strong></label>
-            <select class="form-select" id="status" name="status" required>
-                <option value="drafting">Bozza</option>
-                <option value="submitted">Inviato</option>
-                <option value="accepted">Accettato</option>
-                <option value="published">Pubblicato</option>
-            </select>
-        </div>
-        <!-- deadline della pubblicazione -->
-        <div class="mb-3">
-            <label for="target_deadline" class="form-label"><strong>Deadline della pubblicazione</strong></label>
-            <input type="date" class="form-control" id="target_deadline" name="target_deadline" required>
-        </div>
-        <!-- progetto associato alla pubblicazione -->
-        <div class="mb-3">
-            <label for="project_id" class="form-label"><strong>Progetto associato</strong></label>
-            <h2 class="text-muted small">Seleziona uno o più progetti associati a questa pubblicazione: </h2>
-            <select class="form-select" id="projects" name="projects[]" required multiple>
-                @foreach($projects as $project)
-                    <option value="{{ $project->id }}">{{ $project->title }}</option>
-                @endforeach
-            </select>
-        </div>
-        <!-- autori associati alla pubblicazione -->
-        <div class="author-row d-flex gap-2 mb-2">
-            <select name="authors[user_id][]" class="form-select">
-                <option value="">Seleziona autore</option>
-                @foreach($users as $user)
-                    <option value="{{ $user->id }}">{{ $user->name }}</option>
-                @endforeach
-            </select>
-            <input type="number" name="authors[order][]" class="form-control" placeholder="Ordine" min="1" value="1" style="width:100px">
-            <label class="d-flex align-items-center gap-1">
-                <input type="checkbox" name="authors[is_corresponding][0]" value="1"> Corr.
-            </label>
-            <button type="button" class="btn btn-danger btn-sm remove-author">✕</button>
-        </div>
-        <button type="button" id="add-author" class="btn btn-secondary btn-sm mb-3">+ Aggiungi autore</button>
-        <div class="mt-3">
-            <button type="submit" class="btn btn-primary">Crea pubblicazione</button>
-        </div>
-    </form>
-</div>
+        <form action="{{ route('publications.store') }}" method="POST" class="card p-4 shadow-sm border-0">
+            @csrf
 
+            <div class="mb-3">
+                <label for="title" class="form-label"><strong>Titolo</strong></label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
 
-<script>
-document.getElementById('add-author').addEventListener('click', function() {
-    var container = this.parentElement;
-    var rows = container.querySelectorAll('.author-row');
-    var newIndex = rows.length;
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="type" class="form-label"><strong>Tipo di pubblicazione</strong></label>
+                    <input type="text" class="form-control" id="type" name="type" required>
+                </div>
 
-    var row = document.createElement('div');
-    row.className = 'author-row d-flex gap-2 mb-2';
+                <div class="col-md-6 mb-3">
+                    <label for="venue" class="form-label"><strong>Luogo di pubblicazione (Venue)</strong></label>
+                    <input type="text" class="form-control" id="venue" name="venue" required>
+                </div>
+            </div>
 
-    // Clona il select dal primo row
-    var firstSelect = rows[0].querySelector('select');
-    var selectClone = firstSelect.cloneNode(true);
-    selectClone.value = '';
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="doi" class="form-label"><strong>DOI</strong></label>
+                    <input type="text" class="form-control" id="doi" name="doi" required>
+                </div>
 
-    row.innerHTML = '';
-    row.appendChild(selectClone);
+                <div class="col-md-6 mb-3">
+                    <label for="target_deadline" class="form-label"><strong>Deadline della pubblicazione</strong></label>
+                    <input type="date" class="form-control" id="target_deadline" name="target_deadline" required>
+                </div>
+            </div>
 
-    var orderInput = document.createElement('input');
-    orderInput.type = 'number';
-    orderInput.name = 'authors[order][]';
-    orderInput.className = 'form-control';
-    orderInput.placeholder = 'Ordine';
-    orderInput.min = '1';
-    orderInput.value = newIndex + 1;
-    orderInput.style.width = '100px';
-    row.appendChild(orderInput);
+            <div class="mb-4">
+                <label for="status" class="form-label"><strong>Stato</strong></label>
+                <select class="form-select" id="status" name="status" required>
+                    <option value="drafting">Bozza</option>
+                    <option value="submitted">Inviato</option>
+                    <option value="accepted">Accettato</option>
+                    <option value="published">Pubblicato</option>
+                </select>
+            </div>
 
-    var label = document.createElement('label');
-    label.className = 'd-flex align-items-center gap-1';
-    var checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.name = 'authors[is_corresponding][' + newIndex + ']';
-    checkbox.value = '1';
-    label.appendChild(checkbox);
-    label.appendChild(document.createTextNode(' Corr.'));
-    row.appendChild(label);
+            <div class="mb-4 p-3 bg-light rounded border">
+                <label for="projects" class="form-label"><strong>Progetti associati</strong></label>
+                <p class="text-muted small mb-2">Seleziona uno o più progetti. <em>(Tieni premuto CTRL su Windows o CMD su Mac per selezionarne multipli)</em></p>
+                <select class="form-select" id="projects" name="projects[]" required multiple size="4">
+                    @foreach($projects as $project)
+                        <option value="{{ $project->id }}">{{ $project->title }}</option>
+                    @endforeach
+                </select>
+            </div>
 
-    var removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'btn btn-danger btn-sm remove-author';
-    removeBtn.textContent = '✕';
-    removeBtn.addEventListener('click', function() { row.remove(); });
-    row.appendChild(removeBtn);
+            <div class="mb-4 p-3 bg-light rounded border">
+                <label class="form-label d-block"><strong>Autori associati</strong></label>
 
-    container.insertBefore(row, this);
-});
+                <div id="authors-container">
+                    <div class="author-row d-flex align-items-center gap-2 mb-2">
+                        <select name="authors[user_id][]" class="form-select">
+                            <option value="">Seleziona autore</option>
+                            @foreach($users as $user)
+                                <option value="{{ $user->id }}">{{ $user->name }}</option>
+                            @endforeach
+                        </select>
+                        <input type="number" name="authors[order][]" class="form-control" placeholder="Ordine" min="1" value="1" style="width:100px">
+                        <div class="form-check ms-2 me-2">
+                            <input class="form-check-input" type="checkbox" name="authors[is_corresponding][0]" value="1">
+                            <label class="form-check-label">Corr.</label>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-author">✕</button>
+                    </div>
+                </div>
 
-// Gestione rimozione per il primo row esistente
-document.querySelectorAll('.remove-author').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        if (document.querySelectorAll('.author-row').length > 1) {
-            this.closest('.author-row').remove();
-        }
-    });
-});
-</script>
+                <button type="button" id="add-author" class="btn btn-sm btn-outline-primary mt-2">+ Aggiungi autore</button>
+            </div>
+
+            <div class="mt-4 text-end">
+                <button type="submit" class="btn btn-primary btn-lg fw-bold px-5">Crea pubblicazione</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let authorIndex = 1; // Contatore per gli indici univoci delle checkbox
+
+            document.getElementById('add-author').addEventListener('click', function() {
+                const container = document.getElementById('authors-container');
+                const rows = container.querySelectorAll('.author-row');
+                const newOrderValue = rows.length + 1;
+
+                // Creiamo la nuova riga
+                const row = document.createElement('div');
+                row.className = 'author-row d-flex align-items-center gap-2 mb-2';
+
+                // Cloniamo la select dalla prima riga (se esiste, altrimenti creiamo tutto da zero)
+                const firstSelect = rows[0] ? rows[0].querySelector('select') : null;
+                let selectHtml = '';
+                if (firstSelect) {
+                    const selectClone = firstSelect.cloneNode(true);
+                    selectClone.value = ''; // Resetta il valore
+                    selectHtml = selectClone.outerHTML;
+                }
+
+                row.innerHTML = `
+            ${selectHtml}
+            <input type="number" name="authors[order][]" class="form-control" placeholder="Ordine" min="1" value="${newOrderValue}" style="width:100px">
+            <div class="form-check ms-2 me-2">
+                <input class="form-check-input" type="checkbox" name="authors[is_corresponding][${authorIndex}]" value="1">
+                <label class="form-check-label">Corr.</label>
+            </div>
+            <button type="button" class="btn btn-outline-danger btn-sm remove-author">✕</button>
+        `;
+
+                container.appendChild(row);
+                authorIndex++;
+            });
+
+            // Delegazione eventi per il bottone di rimozione (funziona anche per gli elementi aggiunti dinamicamente)
+            document.getElementById('authors-container').addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-author') || e.target.closest('.remove-author')) {
+                    const rows = document.querySelectorAll('.author-row');
+                    if (rows.length > 1) {
+                        e.target.closest('.author-row').remove();
+                    } else {
+                        alert("Devi inserire almeno un autore!");
+                    }
+                }
+            });
+        });
+    </script>
 @endsection
