@@ -33,7 +33,8 @@ class TaskController extends Controller
             'due_date'    => 'nullable|date',
             'status'      => 'required|in:open,in_progress,done',
             'priority'    => 'required|in:low,medium,high',
-            'assignee_id' => 'nullable|exists:users,id',
+            // MODIFICA QUI: Da nullable a required
+            'assignee_id' => 'required|exists:users,id',
             'target'      => 'nullable|string',
         ]);
 
@@ -88,8 +89,7 @@ class TaskController extends Controller
             'due_date'    => 'nullable|date',
             'status'      => 'required|in:open,in_progress,done',
             'priority'    => 'required|in:low,medium,high',
-            'assignee_id' => 'nullable|exists:users,id',
-            // Valideremo il nuovo campo 'target' che ci arriva dal form
+            'assignee_id' => 'required|exists:users,id',
             'target'      => 'nullable|string',
         ]);
 
@@ -115,8 +115,7 @@ class TaskController extends Controller
 
         $task->update($validated);
 
-        // ECCO LA MODIFICA: Ora torniamo indietro invece di andare a tasks.index
-        return redirect()->back()
+        return redirect()->route('tasks.index')
             ->with('success', 'Task aggiornata con successo!');
     }
 
