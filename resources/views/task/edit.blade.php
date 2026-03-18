@@ -63,6 +63,7 @@
                                 </select>
                                 @error('target') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="due_date" class="form-label fw-bold">Scadenza</label>
@@ -76,7 +77,7 @@
 
                                 <div class="col-md-6 mb-3">
                                     <label for="status" class="form-label fw-bold">Stato</label>
-                                    <select class="form-select @error('status') is-invalid @enderror" id="status" name="status">
+                                    <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" onchange="checkTaskDateLimits()">
                                         <option value="open" {{ old('status', $task->status) == 'open' ? 'selected' : '' }}>Da Fare</option>
                                         <option value="in_progress" {{ old('status', $task->status) == 'in_progress' ? 'selected' : '' }}>In Corso</option>
                                         <option value="done" {{ old('status', $task->status) == 'done' ? 'selected' : '' }}>Completato</option>
@@ -84,6 +85,32 @@
                                     @error('status') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                             </div>
+
+                            <script>
+                                function checkTaskDateLimits() {
+                                    const statusSelect = document.getElementById('status');
+                                    const dueDateInput = document.getElementById('due_date');
+
+                                    if (!statusSelect || !dueDateInput) return;
+
+                                    const today = new Date().toISOString().split('T')[0];
+
+                                    // Se la task è "Da fare" o "In corso", la scadenza non può essere nel passato
+                                    if (statusSelect.value === 'open' || statusSelect.value === 'in_progress') {
+                                        dueDateInput.min = today;
+
+                                        if (dueDateInput.value && dueDateInput.value < today) {
+                                            dueDateInput.value = ''; // Pulisce se il valore attuale è invalido
+                                        }
+                                    } else {
+                                        // Se "Completata", permettiamo di mantenere una data passata
+                                        dueDateInput.min = '';
+                                    }
+                                }
+
+                                // Eseguiamo il controllo al caricamento della pagina
+                                document.addEventListener('DOMContentLoaded', checkTaskDateLimits);
+                            </script>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
