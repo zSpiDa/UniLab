@@ -180,7 +180,7 @@
                     </div>
 
                     <div class="col-md-12">
-                        <label class="form-label fw-bold">Tags Task (separati da virgola)</label>
+                        <label class="form-label fw-bold">Tags (separati da virgola)</label>
                         <input type="text" name="tasks[0][tags]" class="form-control" placeholder="Es: Urgente, Frontend, Bug...">
                     </div>
                 </div>

@@ -15,15 +15,27 @@
                             @csrf
                             @method('PUT')
 
-                            <div class="mb-3">
-                                <label for="title" class="form-label fw-bold">Titolo Task</label>
-                                <input type="text"
-                                       class="form-control @error('title') is-invalid @enderror"
-                                       id="title"
-                                       name="title"
-                                       value="{{ old('title', str_replace('Task: ', '', $task->title)) }}"
-                                       required>
-                                @error('title') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <div class="row mb-3">
+                                <div class="col-md-8">
+                                    <label for="title" class="form-label fw-bold">Titolo Task</label>
+                                    <input type="text"
+                                           class="form-control @error('title') is-invalid @enderror"
+                                           id="title"
+                                           name="title"
+                                           value="{{ old('title', str_replace('Task: ', '', $task->title)) }}"
+                                           required>
+                                    @error('title') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="tags" class="form-label fw-bold">Tags <small class="text-muted fw-normal">(separati da virgola)</small></label>
+                                    <input type="text"
+                                           class="form-control @error('tags') is-invalid @enderror"
+                                           id="tags"
+                                           name="tags"
+                                           placeholder="Es: Urgente, Bug..."
+                                           value="{{ old('tags', $task->tags ? $task->tags->pluck('name')->implode(', ') : '') }}">
+                                    @error('tags') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
                             </div>
 
                             <div class="mb-3">

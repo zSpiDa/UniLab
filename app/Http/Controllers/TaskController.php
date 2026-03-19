@@ -13,8 +13,9 @@ class TaskController extends Controller
 {
     public function index()
     {
-        $tasks = Task::with(['project', 'user'])->latest()->paginate(10);
+        $tasks = Task::with(['project', 'user', 'tags'])->latest()->paginate(10);
         return view('task.index', compact('tasks'));
+
     }
 
     public function create()
@@ -134,8 +135,7 @@ class TaskController extends Controller
             $task->tags()->sync($tagIds);
         }
 
-        // Modificato in redirect()->back() così resti comodamente nella pagina in cui stavi lavorando!
-        return redirect()->back()
+        return redirect()->route('tasks.index')
             ->with('success', 'Task aggiornata con successo!');
     }
 

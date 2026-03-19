@@ -19,6 +19,13 @@
                                     <tr>
                                         <td class="ps-4 py-3">
                                             <div class="fw-bold fs-6">{{ str_replace('Task: ', '', $task->title) }}</div>
+                                            @if($task->tags && $task->tags->isNotEmpty())
+                                                <div class="mt-2 d-flex flex-wrap gap-1">
+                                                    @foreach($task->tags as $tag)
+                                                        <span class="badge bg-light text-dark border" style="font-size: 0.70rem;">#{{ $tag->name }}</span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                             @if($task->due_date)
                                                 <small class="text-muted">
                                                     Scadenza: {{ \Carbon\Carbon::parse($task->due_date)->format('d/m/Y') }}

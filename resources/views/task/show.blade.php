@@ -135,6 +135,22 @@
                                 </span>
                             </li>
 
+                            {{-- VISUALIZZA TAGS NEL DETTAGLIO --}}
+                            <li class="list-group-item py-3">
+                                <div class="text-muted fw-bold small mb-2">Tags</div>
+                                <div>
+                                    @if($task->tags && $task->tags->isNotEmpty())
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach($task->tags as $tag)
+                                                <span class="badge bg-light text-dark border px-2 py-1">#{{ $tag->name }}</span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-muted fst-italic small">-- Nessun tag --</span>
+                                    @endif
+                                </div>
+                            </li>
+
                             <li class="list-group-item py-3">
                                 <div class="text-muted fw-bold small mb-1">Assegnato a</div>
                                 <div>
