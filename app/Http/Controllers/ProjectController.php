@@ -60,6 +60,20 @@ class ProjectController extends Controller
             ->with('success', 'Membro rimosso dal team.');
     }
 
+    public function removePublication(Project $project, Publication $publication)
+    {
+        // Controlli di sicurezza opzionali (es. se solo il manager può farlo)
+        $user = auth()->user();
+        if ($user->role === 'manager' && !$project->users->contains($user->id)) {
+            abort(403, 'Non puoi modificare un progetto di cui non fai parte.');
+        }
+
+        // Scollega la pubblicazione dal progetto
+        $project->publications()->detach($publication->id);
+
+        return redirect()->back()->with('success', 'Pubblicazione scollegata dal progetto con successo.');
+    }
+
     public function create()
     {
         $users = User::orderBy('name')->get();

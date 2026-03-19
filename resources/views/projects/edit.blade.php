@@ -171,7 +171,7 @@
 
                     function addMilestone() {
                         const container = document.getElementById('milestones-container');
-                        const newIndexStr = 'new_' + milestoneIndex; // Creiamo una stringa come 'new_0'
+                        const newIndexStr = 'new_' + milestoneIndex;
 
                         const row = document.createElement('div');
                         row.className = 'row g-2 mb-2 align-items-end p-3 bg-light border rounded milestone-row';
@@ -397,11 +397,6 @@
                             <textarea name="description" class="form-control" rows="2" placeholder="Dettagli aggiuntivi..."></textarea>
                         </div>
 
-                        <div class="col-md-12">
-                            <label class="form-label fw-bold">Tags (separati da virgola)</label>
-                            <input type="text" name="tags" class="form-control" placeholder="Es: Urgente, Frontend, Bug...">
-                        </div>
-
                         <div class="col-md-12 text-end mt-3">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-lg"></i> Crea Task
@@ -437,7 +432,7 @@
 
                             <div class="d-flex align-items-center" style="gap: 10px;">
 
-                                {{-- FORM DI MODIFICA: Aggiunto campo tags e bottone Salva --}}
+                                {{-- FORM DI MODIFICA TASK AL VOLO --}}
                                 <form method="POST" action="{{ route('tasks.update', $task) }}" class="m-0 p-0 d-flex align-items-center gap-2">
                                     @csrf
                                     @method('PUT')
@@ -447,7 +442,6 @@
                                     <input type="hidden" name="priority" value="{{ $task->priority }}">
                                     <input type="hidden" name="target" value="{{ $task->milestone_id ? 'milestone_'.$task->milestone_id : 'project_'.$project->id }}">
 
-                                    {{-- CAMPO TEXT PER MODIFICARE I TAG AL VOLO --}}
                                     <input type="text" name="tags" class="form-control form-control-sm" placeholder="Tags (es. Bug)" value="{{ $task->tags ? $task->tags->pluck('name')->implode(', ') : '' }}" style="width: 140px;">
 
                                     <select name="status" class="form-select form-select-sm m-0" style="width: auto; min-width: 130px;">
@@ -456,7 +450,6 @@
                                         <option value="done" {{ $task->status == 'done' ? 'selected' : '' }}>Completato</option>
                                     </select>
 
-                                    {{-- BOTTONE SALVA --}}
                                     <button type="submit" class="btn btn-primary btn-sm fw-bold">Salva</button>
                                 </form>
 
@@ -476,24 +469,44 @@
             @endif
         </div>
 
+        {{-- INIZIO SEZIONE PUBBLICAZIONI CON TASTI MODIFICA ED ELIMINA --}}
         <div class="mb-3 border-top pt-4 mt-4">
-            <h5>Pubblicazioni</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Pubblicazioni</h5>
+            </div>
+
             @if($project->publications->count() > 0)
-                <ul class="list-group">
+                <ul class="list-group shadow-sm">
                     @foreach($project->publications as $pub)
-                        <li class="list-group-item">
-                            <strong>{{ $pub->title }}</strong><br>
-                            @php
-                                $authorNames = $pub->authors->map(function($author) {
-                                    return $author->user?->name;
-                                })->filter()->join(', ');
-                            @endphp
-                            <small class="text-muted">Autori: {{ $authorNames ?: ($pub->author ?? 'Non specificato') }}</small>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ $pub->title }}</strong><br>
+                                @php
+                                    $authorNames = $pub->authors->map(function($author) {
+                                        return $author->user?->name;
+                                    })->filter()->join(', ');
+                                @endphp
+                                <small class="text-muted">Autori: {{ $authorNames ?: ($pub->author ?? 'Non specificato') }}</small>
+                            </div>
+
+                            <div class="d-flex align-items-center" style="gap: 10px;">
+                                <a href="{{ route('publications.edit', $pub) }}" class="btn btn-sm btn-outline-primary m-0">
+                                    Modifica
+                                </a>
+
+                                <form method="POST" action="{{ route('projects.publications.detach', ['project' => $project->id, 'publication' => $pub->id]) }}" class="m-0 p-0" onsubmit="return confirm('Vuoi davvero scollegare questa pubblicazione dal progetto?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-warning btn-sm m-0">
+                                        Scollega
+                                    </button>
+                                </form>
+                            </div>
                         </li>
                     @endforeach
                 </ul>
             @else
-                <p class="text-muted">Nessuna pubblicazione associata a questo progetto.</p>
+                <p class="text-muted fst-italic">Nessuna pubblicazione associata a questo progetto.</p>
             @endif
         </div>
     </div>

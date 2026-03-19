@@ -41,6 +41,7 @@ Route::middleware(['auth', 'role:pi,manager'])->group(function () {
     Route::middleware(['auth', 'role:pi,manager'])->group(function () {
         Route::post('/projects/{project}/members', [ProjectController::class, 'addMember'])->name('projects.addMember');
         Route::delete('/projects/{project}/members/{user}', [ProjectController::class, 'removeMember'])->name('projects.removeMember');
+        Route::delete('/projects/{project}/publications/{publication}/detach', [ProjectController::class, 'removePublication'])->name('projects.publications.detach');
     });
     Route::get('/projects/{project}/export', [ProjectController::class, 'exportCsv'])->middleware(['auth', 'role:pi,manager'])->name('projects.export')->name('projects.export');
 });
