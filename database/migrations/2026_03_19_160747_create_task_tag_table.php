@@ -9,6 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('task_tag', function (Blueprint $table) {
+            //schema per la tabella pivot tra tasks e tags
             $table->id();
             $table->foreignId('task_id')->constrained()->onDelete('cascade');
             $table->foreignId('tag_id')->constrained()->onDelete('cascade');
