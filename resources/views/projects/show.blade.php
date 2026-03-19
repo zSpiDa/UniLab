@@ -54,6 +54,9 @@
                 </div>
 
                 <div class="d-flex gap-2 flex-shrink-0">
+                    <a href="{{ route('projects.export', $project) }}" class="btn btn-success btn-sm fw-bold shadow-sm">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Esporta CSV
+                    </a>
                     <a href="{{ route('projects.edit', $project) }}" class="btn btn-warning btn-sm fw-bold shadow-sm">
                         <i class="bi bi-pencil"></i> Modifica
                     </a>
