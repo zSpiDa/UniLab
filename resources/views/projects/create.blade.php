@@ -120,68 +120,87 @@
                 }
             </script>
 
-            {{-- INIZIO SEZIONE TASK INSERITA QUI --}}
-            <div class="card mb-5">
-                <div class="card-header fw-bold">
-                    Crea Nuova Task
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-12">
-                            <label class="form-label fw-bold">Titolo Task</label>
-                            <input type="text" name="tasks[0][title]" class="form-control" placeholder="Es: Analisi dati preliminari...">
-                        </div>
+            <div class="mb-4 p-3 bg-light rounded border">
+                <h5 class="form-label fw-bold">Crea Nuova Task</h5>
 
-                        {{-- CAMPO TARGET ADATTATO PER LA PAGINA DI CREAZIONE --}}
-                        <div class="col-md-6">
-                            <label for="target" class="form-label fw-bold">Associa a (Progetto / Milestone)</label>
-                            <select name="tasks[0][target]" id="target" class="form-select">
-                                <option value="new_project" selected>--> Assegna al Nuovo Progetto in Creazione</option>
-                            </select>
-                        </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Titolo Task</label>
+                        <input type="text" name="tasks[0][title]" id="task_title_input" class="form-control" placeholder="Es: Analisi dati preliminari...">
+                    </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Assegna a (Utente)</label>
-                            <select name="tasks[0][assignee_id]" class="form-select">
-                                <option value="">-- Nessuno --</option>
-                                @foreach($users as $u)
-                                    <option value="{{ $u->id }}">{{ $u->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Associa a</label>
+                        <select name="tasks[0][milestone_index]" id="task_target_select" class="form-select border-primary">
+                            <option value="">--> Assegna al Progetto (Nessuna Milestone)</option>
+                        </select>
+                    </div>
 
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Stato</label>
-                            <select name="tasks[0][status]" class="form-select">
-                                <option value="open" selected>Da Fare</option>
-                                <option value="in_progress">In Corso</option>
-                                <option value="done">Completato</option>
-                            </select>
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Assegna a (Utente)</label>
+                        <select name="tasks[0][assignee_id]" id="task_assignee_select" class="form-select"
+                                oninvalid="this.setCustomValidity('Per favore, seleziona un utente per questa task!')"
+                                onchange="this.setCustomValidity('')">
+                            <option value="">-- Seleziona Utente --</option>
+                            @foreach($users as $u)
+                                <option value="{{ $u->id }}">{{ $u->name }}</option>
+                            @endforeach
+                        </select>
+                        <small id="assignee_message" class="text-danger mt-1" style="display:none; font-weight: 500;">
+                            Devi selezionare un utente se crei una task
+                        </small>
+                    </div>
 
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Priorità</label>
-                            <select name="tasks[0][priority]" class="form-select">
-                                <option value="low">Bassa</option>
-                                <option value="medium" selected>Media</option>
-                                <option value="high">Alta</option>
-                            </select>
-                        </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Stato</label>
+                        <select name="tasks[0][status]" class="form-select">
+                            <option value="open" selected>Da Fare</option>
+                            <option value="in_progress">In Corso</option>
+                            <option value="done">Completato</option>
+                        </select>
+                    </div>
 
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Scadenza</label>
-                            <input type="date" name="tasks[0][due_date]" class="form-control">
-                        </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Priorità</label>
+                        <select name="tasks[0][priority]" class="form-select">
+                            <option value="low">Bassa</option>
+                            <option value="medium" selected>Media</option>
+                            <option value="high">Alta</option>
+                        </select>
+                    </div>
 
-                        <div class="col-md-12">
-                            <label class="form-label fw-bold">Descrizione (opzionale)</label>
-                            <textarea name="tasks[0][description]" class="form-control" rows="2" placeholder="Dettagli aggiuntivi..."></textarea>
-                        </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Scadenza</label>
+                        <input type="date" name="tasks[0][due_date]" class="form-control">
+                    </div>
 
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Descrizione (opzionale)</label>
+                        <textarea name="tasks[0][description]" class="form-control" rows="2" placeholder="Dettagli aggiuntivi..."></textarea>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Tags Task (separati da virgola)</label>
+                        <input type="text" name="tasks[0][tags]" class="form-control" placeholder="Es: Urgente, Frontend, Bug...">
                     </div>
                 </div>
+
+                <script>
+                    document.getElementById('task_title_input').addEventListener('input', function() {
+                        const assigneeSelect = document.getElementById('task_assignee_select');
+                        const message = document.getElementById('assignee_message');
+
+                        if (this.value.trim() !== '') {
+                            assigneeSelect.setAttribute('required', 'required');
+                            message.style.display = 'block'; // Mostra il messaggio di testo
+                        } else {
+                            assigneeSelect.removeAttribute('required');
+                            message.style.display = 'none'; // Nasconde il messaggio
+                        }
+                    });
+                </script>
             </div>
-            {{-- FINE SEZIONE TASK --}}
+
 
             <div class="mb-4">
                 <h5 class="fw-bold">Milestone</h5>
@@ -221,11 +240,6 @@
                         milestoneIndex++;
                     }
                 </script>
-            </div>
-
-            <div class="mb-3">
-                <label for="tags" class="form-label fw-bold">Tags</label>
-                <input type="text" placeholder="Inserisci i tag separati da virgola (es. 'Biologia, Chimica')" class="form-control" id="tags" name="tags" value="{{ old('tags') }}">
             </div>
 
             <div class="mb-4">

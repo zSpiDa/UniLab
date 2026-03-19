@@ -161,7 +161,7 @@
                         <thead class="table-light">
                         <tr>
                             <th>Task</th>
-                            <th>Stato</th>
+                            <th>Tags</th> <th>Stato</th>
                             <th>Priorità</th>
                             <th>Assegnato a</th>
                         </tr>
@@ -177,6 +177,20 @@
                                         <small class="text-muted">Scadenza: {{ \Carbon\Carbon::parse($task->due_date)->format('d/m/Y') }}</small>
                                     @endif
                                 </td>
+
+                                {{-- I TAG ORA SONO IN QUESTA COLONNA DEDICATA --}}
+                                <td>
+                                    @if($task->tags && $task->tags->isNotEmpty())
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach($task->tags as $tag)
+                                                <span class="badge bg-light text-dark border" style="font-size: 0.70rem;">#{{ $tag->name }}</span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-muted small fst-italic">--</span>
+                                    @endif
+                                </td>
+
                                 <td>
                                     @php
                                         $statusBtnClass = match($task->status) {
@@ -194,7 +208,7 @@
                                     @endphp
                                     <span class="btn btn-sm {{ $statusBtnClass }} fw-bold disabled py-0 px-2" style="opacity: 1; font-size: 0.75rem;">
                                     {{ $statusLabel }}
-                                </span>
+                                    </span>
                                 </td>
                                 <td>
                                     @php
@@ -213,7 +227,7 @@
                                     @endphp
                                     <span class="btn btn-sm {{ $prioBtnClass }} fw-bold disabled py-0 px-2" style="opacity: 1; font-size: 0.75rem;">
                                     {{ $prioLabel }}
-                                </span>
+                                    </span>
                                 </td>
                                 <td>
                                     @if($task->user)
@@ -225,7 +239,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center py-3 text-muted fst-italic">
+                                <td colspan="5" class="text-center py-3 text-muted fst-italic">
                                     Nessuna task associata a questo progetto.
                                 </td>
                             </tr>

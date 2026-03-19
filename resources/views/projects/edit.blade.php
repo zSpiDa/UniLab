@@ -397,6 +397,11 @@
                             <textarea name="description" class="form-control" rows="2" placeholder="Dettagli aggiuntivi..."></textarea>
                         </div>
 
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Tags Task (separati da virgola)</label>
+                            <input type="text" name="tags" class="form-control" placeholder="Es: Urgente, Frontend, Bug...">
+                        </div>
+
                         <div class="col-md-12 text-end mt-3">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-lg"></i> Crea Task
@@ -419,22 +424,40 @@
                                 @if($task->milestone)
                                     <span class="badge bg-secondary ms-2">Milestone: {{ $task->milestone->title }}</span>
                                 @endif
+
+                                {{-- VISUALIZZA TAGS ESISTENTI SOTTO LA TASK --}}
+                                @if($task->tags && $task->tags->isNotEmpty())
+                                    <div class="mt-1 d-flex flex-wrap gap-1">
+                                        @foreach($task->tags as $tag)
+                                            <span class="badge bg-light text-dark border" style="font-size: 0.65rem;">#{{ $tag->name }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
+
                             <div class="d-flex align-items-center" style="gap: 10px;">
-                                <form method="POST" action="{{ route('tasks.update', $task) }}" class="m-0 p-0">
+
+                                {{-- FORM DI MODIFICA: Aggiunto campo tags e bottone Salva --}}
+                                <form method="POST" action="{{ route('tasks.update', $task) }}" class="m-0 p-0 d-flex align-items-center gap-2">
                                     @csrf
                                     @method('PUT')
                                     <input type="hidden" name="title" value="{{ $task->title }}">
                                     <input type="hidden" name="description" value="{{ $task->description }}">
                                     <input type="hidden" name="due_date" value="{{ $task->due_date ? \Carbon\Carbon::parse($task->due_date)->format('Y-m-d') : '' }}">
                                     <input type="hidden" name="priority" value="{{ $task->priority }}">
-
                                     <input type="hidden" name="target" value="{{ $task->milestone_id ? 'milestone_'.$task->milestone_id : 'project_'.$project->id }}">
-                                    <select name="status" class="form-select form-select-sm m-0" style="width: auto; min-width: 130px;" onchange="this.form.submit()">
+
+                                    {{-- CAMPO TEXT PER MODIFICARE I TAG AL VOLO --}}
+                                    <input type="text" name="tags" class="form-control form-control-sm" placeholder="Tags (es. Bug)" value="{{ $task->tags ? $task->tags->pluck('name')->implode(', ') : '' }}" style="width: 140px;">
+
+                                    <select name="status" class="form-select form-select-sm m-0" style="width: auto; min-width: 130px;">
                                         <option value="open" {{ $task->status == 'open' ? 'selected' : '' }}>Da Fare</option>
                                         <option value="in_progress" {{ $task->status == 'in_progress' ? 'selected' : '' }}>In Corso</option>
                                         <option value="done" {{ $task->status == 'done' ? 'selected' : '' }}>Completato</option>
                                     </select>
+
+                                    {{-- BOTTONE SALVA --}}
+                                    <button type="submit" class="btn btn-primary btn-sm fw-bold">Salva</button>
                                 </form>
 
                                 <form method="POST" action="{{ route('tasks.destroy', $task) }}" class="m-0 p-0" onsubmit="return confirm('Sei sicuro di voler eliminare questa task?');">
