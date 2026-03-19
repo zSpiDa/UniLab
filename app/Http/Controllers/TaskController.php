@@ -6,21 +6,21 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\Project;
 use App\Models\Milestone;
+use App\Models\Tag; // <-- AGGIUNTO IL MODELLO TAG
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
     public function index()
     {
-        // Nota: la relazione nel modello si chiama 'user', quindi usiamo 'user' qui nel with
-        $tasks = Task::with(['project', 'user'])->latest()->paginate(10);
+        $tasks = Task::with(['project', 'user', 'tags'])->latest()->paginate(10);
         return view('task.index', compact('tasks'));
+
     }
 
     public function create()
     {
         $users = User::orderBy('name')->get();
-        // IMPORTANTE: Carichiamo i progetti INSIEME alle milestone
         $projects = Project::with('milestones')->orderBy('title')->get();
         return view('task.create', compact('users', 'projects'));
     }
@@ -33,12 +33,11 @@ class TaskController extends Controller
             'due_date'    => 'nullable|date',
             'status'      => 'required|in:open,in_progress,done',
             'priority'    => 'required|in:low,medium,high',
-            // MODIFICA QUI: Da nullable a required
             'assignee_id' => 'required|exists:users,id',
             'target'      => 'nullable|string',
+            'tags'        => 'nullable|string', // <-- AGGIUNTO ALLA VALIDAZIONE
         ]);
 
-        // Smistiamo il valore di "target" in project_id e milestone_id
         if ($request->filled('target')) {
             if (str_starts_with($request->target, 'milestone_')) {
                 $milestoneId = str_replace('milestone_', '', $request->target);
@@ -56,27 +55,36 @@ class TaskController extends Controller
             $validated['milestone_id'] = null;
         }
 
-        // Rimuoviamo 'target' perché non è una colonna del DB
         unset($validated['target']);
 
-        // Crea la Task
-        Task::create($validated);
+        // Creiamo la task e la assegniamo a una variabile
+        $task = Task::create($validated);
 
-        // Redirect intelligente: torniamo sempre alla pagina da cui abbiamo compilato il form!
+        // --- SALVATAGGIO TAG DELLA NUOVA TASK ---
+        if (!empty($request->tags)) {
+            $tagNames = array_filter(array_map('trim', explode(',', $request->tags)));
+            $tagIds = [];
+            foreach ($tagNames as $name) {
+                if(!empty($name)) {
+                    $tagIds[] = Tag::firstOrCreate(['name' => $name])->id;
+                }
+            }
+            $task->tags()->sync($tagIds);
+        }
+
         return redirect()->back()
             ->with('success', 'Task creata con successo!');
     }
 
     public function show(Task $task)
     {
-        $task->load(['user', 'project', 'milestone']); // Carichiamo anche milestone se serve nella view
+        $task->load(['user', 'project', 'milestone', 'tags']); // <-- Aggiunto 'tags'
         return view('task.show', compact('task'));
     }
 
     public function edit(Task $task)
     {
         $users = User::orderBy('name')->get();
-        // IMPORTANTE: Carichiamo i progetti INSIEME alle milestone
         $projects = Project::with('milestones')->orderBy('title')->get();
         return view('task.edit', compact('task', 'users', 'projects'));
     }
@@ -89,11 +97,12 @@ class TaskController extends Controller
             'due_date'    => 'nullable|date',
             'status'      => 'required|in:open,in_progress,done',
             'priority'    => 'required|in:low,medium,high',
-            'assignee_id' => 'required|exists:users,id',
+            // Messo 'nullable' altrimenti il form di modifica veloce dal progetto andava in blocco!
+            'assignee_id' => 'nullable|exists:users,id',
             'target'      => 'nullable|string',
+            'tags'        => 'nullable|string', // <-- AGGIUNTO ALLA VALIDAZIONE
         ]);
 
-        // Smistiamo il valore di "target" in project_id e milestone_id
         if ($request->filled('target')) {
             if (str_starts_with($request->target, 'milestone_')) {
                 $milestoneId = str_replace('milestone_', '', $request->target);
@@ -110,10 +119,21 @@ class TaskController extends Controller
             $validated['milestone_id'] = null;
         }
 
-        // Rimuoviamo 'target' dall'array
         unset($validated['target']);
 
         $task->update($validated);
+
+        // --- AGGIORNAMENTO TAG DELLA TASK ---
+        if ($request->has('tags')) {
+            $tagNames = array_filter(array_map('trim', explode(',', $request->tags)));
+            $tagIds = [];
+            foreach ($tagNames as $name) {
+                if(!empty($name)) {
+                    $tagIds[] = Tag::firstOrCreate(['name' => $name])->id;
+                }
+            }
+            $task->tags()->sync($tagIds);
+        }
 
         return redirect()->route('tasks.index')
             ->with('success', 'Task aggiornata con successo!');

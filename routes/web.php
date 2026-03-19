@@ -41,6 +41,7 @@ Route::middleware(['auth', 'role:pi,manager'])->group(function () {
     Route::middleware(['auth', 'role:pi,manager'])->group(function () {
         Route::post('/projects/{project}/members', [ProjectController::class, 'addMember'])->name('projects.addMember');
         Route::delete('/projects/{project}/members/{user}', [ProjectController::class, 'removeMember'])->name('projects.removeMember');
+        Route::delete('/projects/{project}/publications/{publication}/detach', [ProjectController::class, 'removePublication'])->name('projects.publications.detach');
     });
     Route::get('/projects/{project}/export', [ProjectController::class, 'exportCsv'])->middleware(['auth', 'role:pi,manager'])->name('projects.export');
 });
@@ -100,7 +101,14 @@ Route::middleware(['auth', 'role:pi,manager'])->group(function () {
 
 // Rotta per SALVARE un commento (collegato al progetto)
 Route::post('/projects/{project}/comments', [CommentsController::class, 'store'])->name('projects.comments.store');
+// Rotta per SALVARE un commento (collegato al progetto)
+Route::post('/projects/{project}/comments', [CommentsController::class, 'store'])->name('projects.comments.store');
 
+// NUOVA ROTTA: SALVARE un commento (collegato alla task)
+Route::post('/tasks/{task}/comments', [CommentsController::class, 'storeTaskComment'])->name('tasks.comments.store');
+
+// Rotta per ELIMINARE un commento
+Route::delete('/comments/{comment}', [CommentsController::class, 'destroy'])->name('comments.destroy');
 // Rotta per ELIMINARE un commento
 Route::delete('/comments/{comment}', [CommentsController::class, 'destroy'])->name('comments.destroy');
 

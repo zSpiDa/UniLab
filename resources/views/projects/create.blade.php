@@ -32,7 +32,7 @@
 
             <div class="mb-3">
                 <label for="status" class="form-label fw-bold">Stato</label>
-                <select class="form-select" id="status" name="status" onchange="checkDateLimits()">
+                <select class="form-select" id="status" name="status">
                     <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Pianificato</option>
                     <option value="ongoing" {{ old('status') == 'ongoing' ? 'selected' : '' }}>In corso</option>
                     <option value="completed" {{ old('status') == 'completed' ? 'selected' : '' }}>Completato</option>
@@ -51,61 +51,13 @@
 
             <div class="mb-3">
                 <label for="start_date" class="form-label fw-bold">Data inizio</label>
-                <input type="date" class="form-control @error('start_date') is-invalid @enderror" id="start_date" name="start_date" value="{{ old('start_date') }}" onchange="checkDateLimits()">
-                @error('start_date')
-                <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ old('start_date') }}">
             </div>
 
             <div class="mb-3">
                 <label for="end_date" class="form-label fw-bold">Data fine</label>
-                <input type="date" class="form-control @error('end_date') is-invalid @enderror" id="end_date" name="end_date" value="{{ old('end_date') }}" onchange="checkDateLimits()">
-                @error('end_date')
-                <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ old('end_date') }}">
             </div>
-
-            <script>
-                function checkDateLimits() {
-                    const statusSelect = document.getElementById('status');
-                    const startDateInput = document.getElementById('start_date');
-                    const endDateInput = document.getElementById('end_date');
-
-                    if(!statusSelect || !startDateInput || !endDateInput) return;
-
-                    const today = new Date().toISOString().split('T')[0];
-
-                    // 1. REGOLE PER LA DATA DI INIZIO
-                    if (statusSelect.value === 'draft') {
-                        startDateInput.min = today;
-                        if (startDateInput.value && startDateInput.value < today) {
-                            startDateInput.value = '';
-                        }
-                    } else {
-                        startDateInput.min = '';
-                    }
-
-                    // 2. REGOLE PER LA DATA DI FINE
-                    let minEndDate = '';
-                    if (statusSelect.value === 'ongoing') {
-                        if (startDateInput.value && startDateInput.value > today) {
-                            minEndDate = startDateInput.value;
-                        } else {
-                            minEndDate = today;
-                        }
-                    } else {
-                        minEndDate = startDateInput.value;
-                    }
-
-                    endDateInput.min = minEndDate;
-
-                    if (endDateInput.value && minEndDate && endDateInput.value < minEndDate) {
-                        endDateInput.value = '';
-                    }
-                }
-
-                document.addEventListener('DOMContentLoaded', checkDateLimits);
-            </script>
 
             <div class="mb-3">
                 <label for="description" class="form-label fw-bold">Descrizione</label>
@@ -168,6 +120,88 @@
                 }
             </script>
 
+            <div class="mb-4 p-3 bg-light rounded border">
+                <h5 class="form-label fw-bold">Crea Nuova Task</h5>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Titolo Task</label>
+                        <input type="text" name="tasks[0][title]" id="task_title_input" class="form-control" placeholder="Es: Analisi dati preliminari...">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Associa a</label>
+                        <select name="tasks[0][milestone_index]" id="task_target_select" class="form-select border-primary">
+                            <option value="">--> Assegna al Progetto (Nessuna Milestone)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Assegna a (Utente)</label>
+                        <select name="tasks[0][assignee_id]" id="task_assignee_select" class="form-select"
+                                oninvalid="this.setCustomValidity('Per favore, seleziona un utente per questa task!')"
+                                onchange="this.setCustomValidity('')">
+                            <option value="">-- Seleziona Utente --</option>
+                            @foreach($users as $u)
+                                <option value="{{ $u->id }}">{{ $u->name }}</option>
+                            @endforeach
+                        </select>
+                        <small id="assignee_message" class="text-danger mt-1" style="display:none; font-weight: 500;">
+                            Devi selezionare un utente se crei una task
+                        </small>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Stato</label>
+                        <select name="tasks[0][status]" class="form-select">
+                            <option value="open" selected>Da Fare</option>
+                            <option value="in_progress">In Corso</option>
+                            <option value="done">Completato</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Priorità</label>
+                        <select name="tasks[0][priority]" class="form-select">
+                            <option value="low">Bassa</option>
+                            <option value="medium" selected>Media</option>
+                            <option value="high">Alta</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Scadenza</label>
+                        <input type="date" name="tasks[0][due_date]" class="form-control">
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Descrizione (opzionale)</label>
+                        <textarea name="tasks[0][description]" class="form-control" rows="2" placeholder="Dettagli aggiuntivi..."></textarea>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Tags (separati da virgola)</label>
+                        <input type="text" name="tasks[0][tags]" class="form-control" placeholder="Es: Urgente, Frontend, Bug...">
+                    </div>
+                </div>
+
+                <script>
+                    document.getElementById('task_title_input').addEventListener('input', function() {
+                        const assigneeSelect = document.getElementById('task_assignee_select');
+                        const message = document.getElementById('assignee_message');
+
+                        if (this.value.trim() !== '') {
+                            assigneeSelect.setAttribute('required', 'required');
+                            message.style.display = 'block'; // Mostra il messaggio di testo
+                        } else {
+                            assigneeSelect.removeAttribute('required');
+                            message.style.display = 'none'; // Nasconde il messaggio
+                        }
+                    });
+                </script>
+            </div>
+
+
             <div class="mb-4">
                 <h5 class="fw-bold">Milestone</h5>
                 <div id="milestones-container">
@@ -175,35 +209,12 @@
                         + Aggiungi milestone
                     </button>
                 </div>
-
                 <script>
                     let milestoneIndex = 0;
-
-                    // Nuova funzione per controllare la data della singola Milestone
-                    function checkMilestoneDate(index) {
-                        const statusSelect = document.querySelector(`select[name="milestones[${index}][status]"]`);
-                        const dueDateInput = document.querySelector(`input[name="milestones[${index}][due_date]"]`);
-
-                        if (!statusSelect || !dueDateInput) return;
-
-                        const today = new Date().toISOString().split('T')[0];
-
-                        if (statusSelect.value === 'draft' || statusSelect.value === 'ongoing') {
-                            dueDateInput.min = today;
-                            if (dueDateInput.value && dueDateInput.value < today) {
-                                dueDateInput.value = '';
-                            }
-                        } else {
-                            dueDateInput.min = '';
-                        }
-                    }
-
                     function addMilestone() {
                         const container = document.getElementById('milestones-container');
                         const row = document.createElement('div');
                         row.className = 'row g-2 mb-2 align-items-end p-3 bg-light border rounded';
-
-                        // Passiamo il milestoneIndex corrente alla funzione checkMilestoneDate tramite onchange
                         row.innerHTML = `
                             <div class="col-md-4">
                                 <label class="small fw-bold text-muted">Titolo</label>
@@ -211,11 +222,11 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="small fw-bold text-muted">Data Scadenza</label>
-                                <input type="date" class="form-control" name="milestones[${milestoneIndex}][due_date]" onchange="checkMilestoneDate(${milestoneIndex})">
+                                <input type="date" class="form-control" name="milestones[${milestoneIndex}][due_date]">
                             </div>
                             <div class="col-md-3">
                                 <label class="small fw-bold text-muted">Stato</label>
-                                <select class="form-select" name="milestones[${milestoneIndex}][status]" onchange="checkMilestoneDate(${milestoneIndex})">
+                                <select class="form-select" name="milestones[${milestoneIndex}][status]">
                                     <option value="draft">Pianificato (Draft)</option>
                                     <option value="ongoing">In corso (Ongoing)</option>
                                     <option value="active">Completato (Active)</option>
@@ -226,13 +237,14 @@
                             </div>
                         `;
                         container.appendChild(row);
-
-                        // Chiamiamo subito la funzione per impostare il limite "oggi" di default sulla nuova milestone
-                        checkMilestoneDate(milestoneIndex);
-
                         milestoneIndex++;
                     }
                 </script>
+            </div>
+
+            <div class="mb-4">
+                <label for="file" class="form-label fw-bold">Allega file PDF</label>
+                <input type="file" class="form-control" id="file" name="file" accept=".pdf">
             </div>
 
             <button type="submit" class="btn btn-primary">Crea progetto</button>

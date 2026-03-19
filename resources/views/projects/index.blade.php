@@ -6,7 +6,7 @@
             'draft'     => 'Pianificato',
             'planned'   => 'Pianificato',
             'ongoing'   => 'In Corso',
-            'active'    => 'Completato', // PER IL TUO DATABASE ACTIVE SIGNIFICA COMPLETATO!
+            'active'    => 'Completato',
             'completed' => 'Completato',
         ];
     @endphp

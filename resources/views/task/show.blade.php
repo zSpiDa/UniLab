@@ -8,7 +8,7 @@
 
         <div class="row g-4">
             <div class="col-lg-8">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border-0 shadow-sm mb-4">
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <h2 class="h3 fw-bold mb-0">
@@ -41,6 +41,35 @@
                                 Nessuna descrizione inserita per questa task.
                             </div>
                         @endif
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-bold py-3">Commenti</div>
+                    <div class="card-body p-4">
+                        <form action="{{ route('tasks.comments.store', $task->id) }}" method="POST" class="mb-4">
+                            @csrf
+                            <div class="input-group">
+                                <input type="text" name="body" class="form-control" placeholder="Scrivi un commento..." required>
+                                <button class="btn btn-primary fw-bold px-4" type="submit">Invia</button>
+                            </div>
+                        </form>
+
+                        <div class="vstack gap-3" style="max-height: 250px; overflow-y: auto;">
+                            @forelse($task->comments as $c)
+                                <div class="bg-light p-3 rounded">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong class="small text-primary">{{ optional($c->user)->name ?? 'Utente' }}</strong>
+                                        <span class="text-muted" style="font-size: 0.75rem;">{{ $c->created_at->format('d/m/Y H:i') }}</span>
+                                    </div>
+                                    <div class="small">{{ $c->body }}</div>
+                                </div>
+                            @empty
+                                <div class="text-muted small fst-italic text-center py-3">
+                                    Nessun commento presente. Scrivi il primo!
+                                </div>
+                            @endforelse
+                        </div>
                     </div>
                 </div>
             </div>
@@ -104,6 +133,22 @@
                                         <span class="text-muted fst-italic">Nessuna</span>
                                     @endif
                                 </span>
+                            </li>
+
+                            {{-- VISUALIZZA TAGS NEL DETTAGLIO --}}
+                            <li class="list-group-item py-3">
+                                <div class="text-muted fw-bold small mb-2">Tags</div>
+                                <div>
+                                    @if($task->tags && $task->tags->isNotEmpty())
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach($task->tags as $tag)
+                                                <span class="badge bg-light text-dark border px-2 py-1">#{{ $tag->name }}</span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-muted fst-italic small">-- Nessun tag --</span>
+                                    @endif
+                                </div>
                             </li>
 
                             <li class="list-group-item py-3">

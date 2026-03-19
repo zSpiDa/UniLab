@@ -171,7 +171,7 @@
 
                     function addMilestone() {
                         const container = document.getElementById('milestones-container');
-                        const newIndexStr = 'new_' + milestoneIndex; // Creiamo una stringa come 'new_0'
+                        const newIndexStr = 'new_' + milestoneIndex;
 
                         const row = document.createElement('div');
                         row.className = 'row g-2 mb-2 align-items-end p-3 bg-light border rounded milestone-row';
@@ -419,22 +419,38 @@
                                 @if($task->milestone)
                                     <span class="badge bg-secondary ms-2">Milestone: {{ $task->milestone->title }}</span>
                                 @endif
+
+                                {{-- VISUALIZZA TAGS ESISTENTI SOTTO LA TASK --}}
+                                @if($task->tags && $task->tags->isNotEmpty())
+                                    <div class="mt-1 d-flex flex-wrap gap-1">
+                                        @foreach($task->tags as $tag)
+                                            <span class="badge bg-light text-dark border" style="font-size: 0.65rem;">#{{ $tag->name }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
+
                             <div class="d-flex align-items-center" style="gap: 10px;">
-                                <form method="POST" action="{{ route('tasks.update', $task) }}" class="m-0 p-0">
+
+                                {{-- FORM DI MODIFICA TASK AL VOLO --}}
+                                <form method="POST" action="{{ route('tasks.update', $task) }}" class="m-0 p-0 d-flex align-items-center gap-2">
                                     @csrf
                                     @method('PUT')
                                     <input type="hidden" name="title" value="{{ $task->title }}">
                                     <input type="hidden" name="description" value="{{ $task->description }}">
                                     <input type="hidden" name="due_date" value="{{ $task->due_date ? \Carbon\Carbon::parse($task->due_date)->format('Y-m-d') : '' }}">
                                     <input type="hidden" name="priority" value="{{ $task->priority }}">
-
                                     <input type="hidden" name="target" value="{{ $task->milestone_id ? 'milestone_'.$task->milestone_id : 'project_'.$project->id }}">
-                                    <select name="status" class="form-select form-select-sm m-0" style="width: auto; min-width: 130px;" onchange="this.form.submit()">
+
+                                    <input type="text" name="tags" class="form-control form-control-sm" placeholder="Tags (es. Bug)" value="{{ $task->tags ? $task->tags->pluck('name')->implode(', ') : '' }}" style="width: 140px;">
+
+                                    <select name="status" class="form-select form-select-sm m-0" style="width: auto; min-width: 130px;">
                                         <option value="open" {{ $task->status == 'open' ? 'selected' : '' }}>Da Fare</option>
                                         <option value="in_progress" {{ $task->status == 'in_progress' ? 'selected' : '' }}>In Corso</option>
                                         <option value="done" {{ $task->status == 'done' ? 'selected' : '' }}>Completato</option>
                                     </select>
+
+                                    <button type="submit" class="btn btn-primary btn-sm fw-bold">Salva</button>
                                 </form>
 
                                 <form method="POST" action="{{ route('tasks.destroy', $task) }}" class="m-0 p-0" onsubmit="return confirm('Sei sicuro di voler eliminare questa task?');">
@@ -453,24 +469,44 @@
             @endif
         </div>
 
+        {{-- INIZIO SEZIONE PUBBLICAZIONI CON TASTI MODIFICA ED ELIMINA --}}
         <div class="mb-3 border-top pt-4 mt-4">
-            <h5>Pubblicazioni</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Pubblicazioni</h5>
+            </div>
+
             @if($project->publications->count() > 0)
-                <ul class="list-group">
+                <ul class="list-group shadow-sm">
                     @foreach($project->publications as $pub)
-                        <li class="list-group-item">
-                            <strong>{{ $pub->title }}</strong><br>
-                            @php
-                                $authorNames = $pub->authors->map(function($author) {
-                                    return $author->user?->name;
-                                })->filter()->join(', ');
-                            @endphp
-                            <small class="text-muted">Autori: {{ $authorNames ?: ($pub->author ?? 'Non specificato') }}</small>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ $pub->title }}</strong><br>
+                                @php
+                                    $authorNames = $pub->authors->map(function($author) {
+                                        return $author->user?->name;
+                                    })->filter()->join(', ');
+                                @endphp
+                                <small class="text-muted">Autori: {{ $authorNames ?: ($pub->author ?? 'Non specificato') }}</small>
+                            </div>
+
+                            <div class="d-flex align-items-center" style="gap: 10px;">
+                                <a href="{{ route('publications.edit', $pub) }}" class="btn btn-sm btn-outline-primary m-0">
+                                    Modifica
+                                </a>
+
+                                <form method="POST" action="{{ route('projects.publications.detach', ['project' => $project->id, 'publication' => $pub->id]) }}" class="m-0 p-0" onsubmit="return confirm('Vuoi davvero scollegare questa pubblicazione dal progetto?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-warning btn-sm m-0">
+                                        Scollega
+                                    </button>
+                                </form>
+                            </div>
                         </li>
                     @endforeach
                 </ul>
             @else
-                <p class="text-muted">Nessuna pubblicazione associata a questo progetto.</p>
+                <p class="text-muted fst-italic">Nessuna pubblicazione associata a questo progetto.</p>
             @endif
         </div>
     </div>

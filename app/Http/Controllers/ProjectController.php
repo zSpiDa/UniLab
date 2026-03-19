@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\User;
+use App\Models\Task;
 use App\Models\Tag;
 use App\Models\Milestone;
 use App\Models\Publication;
@@ -26,7 +27,8 @@ class ProjectController extends Controller
 
     public function show(Project $project)
     {
-        $project->load(['milestones', 'publications.authors', 'tags', 'attachments', 'comments.user', 'users', 'tasks']);
+        // riga corretta: aggiungo .tags dopo tasks
+        $project->load(['milestones', 'publications.authors', 'tags', 'attachments', 'comments.user', 'users', 'tasks.tags']);
         $users = User::orderBy('name')->get();
 
         return view('projects.show', ['project' => $project, 'users' => $users]);
@@ -56,6 +58,20 @@ class ProjectController extends Controller
 
         return redirect()->route('projects.show', $project)
             ->with('success', 'Membro rimosso dal team.');
+    }
+
+    public function removePublication(Project $project, Publication $publication)
+    {
+        // Controlli di sicurezza opzionali (es. se solo il manager può farlo)
+        $user = auth()->user();
+        if ($user->role === 'manager' && !$project->users->contains($user->id)) {
+            abort(403, 'Non puoi modificare un progetto di cui non fai parte.');
+        }
+
+        // Scollega la pubblicazione dal progetto
+        $project->publications()->detach($publication->id);
+
+        return redirect()->back()->with('success', 'Pubblicazione scollegata dal progetto con successo.');
     }
 
     public function create()
@@ -96,11 +112,12 @@ class ProjectController extends Controller
 
         $tagsInput = $validated['tags'] ?? null;
         $usersInput = $validated['users'] ?? [];
+        $tasksInput = $validated['tasks'] ?? []; // <-- PRENDIAMO I DATI DELLA TASK
 
         // Rimuoviamo i campi che non appartengono direttamente alla tabella projects
         unset($validated['tags'], $validated['file'], $validated['milestones'], $validated['publications'], $validated['tasks'], $validated['users']);
 
-        DB::transaction(function () use ($validated, $request, $tagsInput, $usersInput) {
+        DB::transaction(function () use ($validated, $request, $tagsInput, $usersInput, $tasksInput) {
 
             $project = Project::create($validated);
 
@@ -135,30 +152,56 @@ class ProjectController extends Controller
             }
 
             // --- GESTIONE MILESTONE ---
+            $createdMilestones = []; // Creiamo una mappa per ricordarci gli ID appena creati
             if ($request->filled('milestones')) {
-                foreach ($request->milestones as $m) {
+                foreach ($request->milestones as $index => $m) {
                     if(is_array($m)) {
-                        $project->milestones()->create([
+                        $newMilestone = $project->milestones()->create([
                             'title'    => $m['title'] ?? 'Milestone',
                             'due_date' => $m['due_date'] ?? null,
                             'status'   => $m['status'] ?? 'active',
                         ]);
+                        // Salviamo l'ID corrispondente all'indice Javascript
+                        $createdMilestones[$index] = $newMilestone->id;
                     }
                 }
             }
 
-            // --- GESTIONE TASK ---
-            if ($request->has('tasks') && is_array($request->tasks)) {
-                foreach ($request->tasks as $taskData) {
+            // --- GESTIONE TASK INIZIALE CON TAGS ---
+            if (!empty($tasksInput)) {
+                foreach ($tasksInput as $taskData) {
                     if (!empty($taskData['title'])) {
-                        $project->tasks()->create([
-                            'title'       => $taskData['title'],
-                            'description' => $taskData['description'] ?? null,
-                            'status'      => $taskData['status'] ?? 'open',
-                            'priority'    => $taskData['priority'] ?? 'medium',
-                            'due_date'    => !empty($taskData['due_date']) ? $taskData['due_date'] : null,
-                            'assignee_id' => !empty($taskData['assignee_id']) ? $taskData['assignee_id'] : null,
+
+                        // Controlliamo se la task va associata a una milestone appena creata
+                        $milestoneId = null;
+                        if (isset($taskData['milestone_index']) && $taskData['milestone_index'] !== '') {
+                            $mIndex = $taskData['milestone_index'];
+                            if (isset($createdMilestones[$mIndex])) {
+                                $milestoneId = $createdMilestones[$mIndex]; // Peschiamo l'ID vero!
+                            }
+                        }
+
+                        $newTask = $project->tasks()->create([
+                            'title'        => $taskData['title'],
+                            'description'  => $taskData['description'] ?? null,
+                            'status'       => $taskData['status'] ?? 'open',
+                            'priority'     => $taskData['priority'] ?? 'medium',
+                            'due_date'     => !empty($taskData['due_date']) ? $taskData['due_date'] : null,
+                            'assignee_id'  => !empty($taskData['assignee_id']) ? $taskData['assignee_id'] : null,
+                            'milestone_id' => $milestoneId, // Associamo la milestone corretta
                         ]);
+
+                        // Se la task appena creata ha dei tags, li salviamo
+                        if (!empty($taskData['tags'])) {
+                            $tagNames = array_filter(array_map('trim', explode(',', $taskData['tags'])));
+                            $tagIds = [];
+                            foreach ($tagNames as $name) {
+                                if(!empty($name)){
+                                    $tagIds[] = Tag::firstOrCreate(['name' => $name])->id;
+                                }
+                            }
+                            $newTask->tags()->sync($tagIds);
+                        }
                     }
                 }
             }
