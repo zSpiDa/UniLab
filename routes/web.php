@@ -25,7 +25,7 @@ Route::middleware('auth')->group(function () {
 
 // ----------------------------------------------------------------------
 // 1. PRIMA LE ROTTE SPECIFICHE (PI, Manager)
-// Devono stare qui in alto, altrimenti "create" viene scambiato per un ID
+// Devono stare qui in alto, altrimenti "create" viene scambiato per un  ID
 // ----------------------------------------------------------------------
 Route::middleware(['auth', 'role:pi,manager'])->group(function () {
     Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create');
