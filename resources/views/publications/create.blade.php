@@ -76,7 +76,16 @@
                     </div>
                 </div>
 
-                <button type="button" id="add-author" class="btn btn-sm btn-outline-primary mt-2">+ Aggiungi autore</button>
+                <button
+                    type="button" id="add-author" class="btn btn-sm btn-outline-primary mt-2">+ Aggiungi autore</button>
+            </div>
+
+            <div class="mb-3">
+                <h5 class="fw-bold">PDF principale</h5>
+                <div class="mb-2">
+                    <label for="file" class="form-label">Aggiungi allegato </label>
+                    <input type="file" name="file" id="file" class="form-control" accept=".pdf">
+                </div>
             </div>
 
             <div class="mt-4 text-end">
