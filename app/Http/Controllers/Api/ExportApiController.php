@@ -12,9 +12,27 @@ class ExportApiController extends Controller
 {
     public function projects(): StreamedResponse
     {
-        $projects = Project::with('users', 'publications')->get();
+        $query = Project::with('users', 'publications');
 
-        $rows = $projects->map(function ($project) {
+        if($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if($request->filled('start_date')) {
+            $query->whereDate('start_date', '>=', $request->start_date);
+        }
+
+        if($request->filled('end_date')) {
+            $query->whereDate('end_date', '<=', $request->end_date);
+        }
+
+        if($request->filled('group_id')) {
+            $query->where('group_id', $request->group_id);
+        }    
+
+        $projects = $query->get();
+
+        $rows = $projects->map(function ($project){
             return [
                 $project->id,
                 $project->title,
@@ -35,54 +53,104 @@ class ExportApiController extends Controller
 
     public function publications(): StreamedResponse
     {
-        $publications = Publication::with('authors.user', 'projects')->get();
+        $query = Publication::with('authors.user', 'projects');
 
-        $rows = $publications->map(function ($publication) {
-            $authors = $publication->authors
-                ->map(fn ($author) => optional($author->user)->name)
-                ->filter()
-                ->implode('|');
-
-            return [
-                $publication->id,
-                $publication->title,
-                $publication->venue,
-                $publication->doi,
-                $publication->status,
-                $publication->target_deadline,
-                $authors,
-                $publication->projects->pluck('title')->implode('|'),
-            ];
-        });
-
-        return $this->streamCsv(
-            'publications.csv',
-            ['id', 'title', 'venue', 'doi', 'status', 'target_deadline', 'authors', 'projects'],
-            $rows
-        );
+    // Filtri query string
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
     }
+
+    if ($request->filled('venue')) {
+        $query->where('venue', 'like', '%' . $request->venue . '%');
+    }
+
+    if ($request->filled('type')) {
+        $query->where('type', $request->type);
+    }
+
+    if ($request->filled('year')) {
+        $query->where('year', $request->year);
+    }
+
+    if ($request->filled('from_deadline')) {
+        $query->where('target_deadline', '>=', $request->from_deadline);
+    }
+
+    if ($request->filled('to_deadline')) {
+        $query->where('target_deadline', '<=', $request->to_deadline);
+    }
+
+    $publications = $query->get();
+
+    $rows = $publications->map(function ($publication) {
+        $authors = $publication->authors
+            ->map(fn ($author) => optional($author->user)->name)
+            ->filter()
+            ->implode('|');
+
+        return [
+            $publication->id,
+            $publication->title,
+            $publication->venue,
+            $publication->doi,
+            $publication->status,
+            $publication->target_deadline,
+            $authors,
+            $publication->projects->pluck('title')->implode('|'),
+        ];
+    });
+
+    return $this->streamCsv(
+        'publications.csv',
+        ['id', 'title', 'venue', 'doi', 'status', 'target_deadline', 'authors', 'projects'],
+        $rows
+    );
+}
 
     public function users(): StreamedResponse
     {
-        $users = User::with('group', 'projects', 'tasks')->get();
+        $query = User::with('group', 'projects', 'tasks');
 
-        $rows = $users->map(function ($user) {
-            return [
-                $user->id,
-                $user->name,
-                $user->email,
-                optional($user->group)->name,
-                $user->projects->pluck('title')->implode('|'),
-                $user->tasks->pluck('title')->implode('|'),
-            ];
-        });
-
-        return $this->streamCsv(
-            'users.csv',
-            ['id', 'name', 'email', 'group', 'projects', 'tasks'],
-            $rows
-        );
+    // Filtri query string
+    if ($request->filled('role')) {
+        $query->where('role', $request->role);
     }
+
+    if ($request->filled('group_id')) {
+        $query->where('group_id', $request->group_id);
+    }
+
+    if ($request->filled('search')) {
+        $search = '%' . $request->search . '%';
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', $search)
+              ->orWhere('email', 'like', $search);
+        });
+    }
+
+    if ($request->boolean('has_projects')) {
+        $query->whereHas('projects');  // Solo utenti con almeno un progetto
+    }
+
+    $users = $query->get();
+
+    $rows = $users->map(function ($user) {
+        return [
+            $user->id,
+            $user->name,
+            $user->email,
+            optional($user->group)->name,
+            $user->projects->pluck('title')->implode('|'),
+            $user->tasks->pluck('title')->implode('|'),
+        ];
+    });
+
+    return $this->streamCsv(
+        'users.csv',
+        ['id', 'name', 'email', 'group', 'projects', 'tasks'],
+        $rows
+    );
+}
 
     private function streamCsv(string $filename, array $header, iterable $rows): StreamedResponse
     {

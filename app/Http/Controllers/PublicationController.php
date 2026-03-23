@@ -213,4 +213,29 @@ class PublicationController extends Controller
             ]);
         }
     }
+
+    public function exportCsv(Publication $publication)
+    {
+        $publication->load(['authors.user', 'projects']);
+
+        return response()->streamDownload(function() use ($publication) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['publication_id', 'title', 'venue', 'doi', 'type', 'status', 'authors', 'projects']);
+            fputcsv($out, [
+                $publication->id,
+                $publication->title,
+                $publication->venue,
+                $publication->doi,
+                $publication->type,
+                $publication->status,
+                $publication->authors->map(fn($a) => $a->user->name ?? 'N/D')->implode('|'),
+                $publication->projects->pluck('title')->implode('|'),
+            ]);
+            fclose($out);
+        }, 'publication_'.$publication->id.'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename=publication_'.$publication->id.'.csv',
+        ]);
+    }
 }

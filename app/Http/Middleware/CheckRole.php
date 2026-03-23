@@ -18,7 +18,8 @@ class CheckRole
     {
         // Utente non autenticato
         if (!Auth::check()) {
-            return redirect()->route('login');
+            //401 unauthorized
+            return response()->json(['message' => 'Non autenticato.'], 401);
         }
 
         // Confronto con ruoli minuscoli
@@ -26,7 +27,7 @@ class CheckRole
         $roles = array_map('strtolower', $roles);
 
         if (! in_array($userRole, $roles, true)) {
-            abort(403, 'Accesso non autorizzato');
+            return response()->json(['message' => 'Accesso non autorizzato.'], 403);
         }
         return $next($request);
     }

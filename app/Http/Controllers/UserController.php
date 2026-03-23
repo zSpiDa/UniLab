@@ -42,5 +42,28 @@ class UserController extends Controller
         $user->delete();
         return redirect()->route('home')->with('status', 'Account eliminato con successo!');
     }
-    
+
+    public function exportCsv(User $user)
+    {
+        $user->load(['group', 'projects', 'tasks']);
+
+        return response()->streamDownload(function() use ($user) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['user_id', 'name', 'email', 'role', 'group', 'projects', 'tasks']);
+            fputcsv($out, [
+                $user->id,
+                $user->name,
+                $user->email,
+                $user->role,
+                optional($user->group)->name,
+                $user->projects->pluck('title')->implode('|'),
+                $user->tasks->pluck('title')->implode('|'),
+            ]);
+            fclose($out);
+        }, 'user_'.$user->id.'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename=user_'.$user->id.'.csv',
+        ]);
+    }
 }

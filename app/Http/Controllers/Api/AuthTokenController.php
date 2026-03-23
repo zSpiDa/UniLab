@@ -25,9 +25,11 @@ class AuthTokenController extends Controller
                 'email' => ['Le credenziali fornite non sono corrette.'],
             ]);
         }
+        $abilites = $this->getAbilitiesByRole($user->role);
 
         return response()->json([
             'token' => $user->createToken($request->device_name)->plainTextToken,
+            'abilities' => $abilites,
         ]);
     }
 
@@ -36,5 +38,26 @@ class AuthTokenController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Token revocato.']);
+    }
+    /**
+     * Restituisce le abilità associate a un ruolo
+     *
+     * @param string $role
+     * @return array
+    */
+    public function getAbilitiesByRole(string $role): array
+    {
+        return match($role){
+            'pi', 'manager' => [
+                'export:projects',
+                'export:publications',
+                'export:users',
+            ],
+            'researcher' => [
+                'export:projects',
+                'export:publications',
+            ],
+            default => [],
+        };
     }
 }

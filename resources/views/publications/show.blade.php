@@ -21,6 +21,9 @@
                             </h2>
 
                             <div class="d-flex gap-2 flex-shrink-0 ms-3">
+                                <a href="{{ route('publications.export', $publication) }}" class="btn btn-success btn-sm fw-bold shadow-sm">
+                                    <i class="bi bi-file-earmark-spreadsheet"></i> Esporta CSV
+                                </a>
                                 @if(Auth::check() && in_array(Auth::user()->role, ['pi','manager']))
                                     <a href="{{ route('publications.edit', $publication) }}" class="btn btn-sm btn-outline-warning fw-bold px-3">
                                         Modifica

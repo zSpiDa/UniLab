@@ -38,6 +38,13 @@
                 <div class="text-danger mt-1">{{ $message }}</div>
             @enderror
         </div>
-        <button type="submit" class="btn btn-primary">Salva Modifiche</button>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Salva Modifiche</button>
+            @if(Auth::check() && in_array(Auth::user()->role, ['pi','manager']))
+                <a href="{{ route('users.export', Auth::user()) }}" class="btn btn-success fw-bold shadow-sm">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Esporta CSV
+                </a>
+            @endif
+        </div>
     </form>
 </section>
