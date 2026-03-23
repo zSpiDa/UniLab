@@ -227,9 +227,9 @@
                             <div class="col-md-3">
                                 <label class="small fw-bold text-muted">Stato</label>
                                 <select class="form-select" name="milestones[${milestoneIndex}][status]">
-                                    <option value="draft">Pianificato (Draft)</option>
-                                    <option value="ongoing">In corso (Ongoing)</option>
-                                    <option value="active">Completato (Active)</option>
+                                    <option value="planned">Pianificato</option>
+                                    <option value="ongoing">In corso</option>
+                                    <option value="completed">Completato</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
