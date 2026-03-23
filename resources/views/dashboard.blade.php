@@ -37,8 +37,9 @@
         <div class="col-6 col-md-3">
             <div class="card text-center border-info shadow-sm">
                 <div class="card-body">
-                    <div class="fs-2 fw-bold text-info">{{ $publications->unique('id')->count() }}</div>
-                    <div class="text-muted small">Pubblicazioni</div>
+                    {{-- AGGIORNATO: Usa $myPublications invece di $publications --}}
+                    <div class="fs-2 fw-bold text-info">{{ $myPublications->count() }}</div>
+                    <div class="text-muted small">Le mie Pubblicazioni</div>
                 </div>
             </div>
         </div>
@@ -109,7 +110,7 @@
                                 <div class="fw-semibold d-flex align-items-center gap-2">
                                     {{ str_replace('Task: ', '', $task->title) }}
 
-                                    {{-- NUOVO: Badge Priorità --}}
+                                    {{-- Badge Priorità --}}
                                     @php
                                         $priorityClass = match($task->priority) {
                                             'high' => 'bg-danger',
@@ -167,12 +168,13 @@
             </div>
         </div>
 
-        {{-- 4. Pubblicazioni collegate --}}
+        {{-- 4. Le mie Pubblicazioni (In basso a destra) --}}
         <div class="col-12 col-md-6">
             <div class="card h-100 shadow-sm border-0">
-                <div class="card-header bg-white fw-semibold">Pubblicazioni collegate</div>
+                <div class="card-header bg-white fw-semibold">Le mie Pubblicazioni</div>
                 <div class="card-body p-0">
-                    @forelse($publications->unique('id') as $pub)
+                    {{-- AGGIORNATO: Usa $myPublications invece di $publications --}}
+                    @forelse($myPublications as $pub)
                         <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
                             <div>
                                 <a href="{{ route('publications.show', $pub) }}" class="fw-semibold text-decoration-none text-dark d-block">
@@ -193,7 +195,7 @@
                         </div>
                     @empty
                         <div class="p-3 text-muted text-center">
-                            Nessuna pubblicazione collegata ai tuoi progetti.
+                            Non sei tra gli autori di nessuna pubblicazione.
                         </div>
                     @endforelse
                 </div>
