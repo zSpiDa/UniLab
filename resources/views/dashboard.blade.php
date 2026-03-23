@@ -26,11 +26,12 @@
                 </div>
             </div>
         </div>
+        {{-- CARD AGGIORNATA: Da Task in corso a Milestone --}}
         <div class="col-6 col-md-3">
             <div class="card text-center border-warning shadow-sm">
                 <div class="card-body">
-                    <div class="fs-2 fw-bold text-warning">{{ $scheduledTasksCount }}</div>
-                    <div class="text-muted small">Task in corso</div>
+                    <div class="fs-2 fw-bold text-warning">{{ $milestones->count() }}</div>
+                    <div class="text-muted small">Milestone</div>
                 </div>
             </div>
         </div>
@@ -146,6 +147,7 @@
             </div>
         </div>
 
+        {{-- 4. Pubblicazioni collegate --}}
         <div class="col-12 col-md-6">
             <div class="card h-100 shadow-sm border-0">
                 <div class="card-header bg-white fw-semibold">Pubblicazioni collegate</div>
