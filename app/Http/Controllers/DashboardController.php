@@ -14,25 +14,35 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        // 1. CARICAMENTO PROGETTI E PUBBLICAZIONI
-        $projects = $user->projects()->with('publications')->get();
-        $publications = $projects->pluck('publications')->flatten();
+        // 1. CARICAMENTO PROGETTI
+        $projects = $user->projects()->get();
 
-        // 2. CALCOLO KPI (I contatori per le card)
+        // 2. LE MIE PUBBLICAZIONI (Indipendenti dai progetti!)
+        // Peschiamo direttamente tutte le pubblicazioni in cui l'utente loggato è autore
+        $myPublications = Publication::with('authors.user')
+            ->whereHas('authors', function ($query) use ($user) {
+                // Controllo se l'utente è tra gli autori (relazione DB)
+                $query->where('user_id', $user->id);
+            })
+            // Oppure controllo se il suo nome è stato scritto a mano nel campo di testo
+            ->orWhere('author', 'LIKE', '%' . $user->name . '%')
+            ->get();
+
+        // 3. CALCOLO KPI (I contatori per le card)
         $assignedTasksCount = Task::where('assignee_id', $user->id)->count();
 
         $scheduledTasksCount = Task::where('assignee_id', $user->id)
             ->where('status', '!=', 'done')
             ->count();
 
-        // 3. LISTA TASK PER LA TABELLA
+        // 4. LISTA TASK PER LA TABELLA
         $myTasks = Task::where('assignee_id', $user->id)
             ->with('project')
             ->orderBy('due_date', 'asc')
             ->take(10)
             ->get();
 
-        // 4. LISTA MILESTONE
+        // 5. LISTA MILESTONE (Solo dei progetti di cui fai parte)
         $projectIds = $projects->pluck('id');
 
         $milestones = Milestone::whereIn('project_id', $projectIds)
@@ -42,11 +52,10 @@ class DashboardController extends Controller
             ->get();
 
         // ---------------------------------------------------------
-        // 5. NOTIFICHE E PROMEMORIA (NUOVA SEZIONE)
+        // 6. NOTIFICHE E PROMEMORIA
         // ---------------------------------------------------------
         $traUnaSettimana = Carbon::today()->addDays(7);
 
-        // a. Task in scadenza (assegnate all'utente, scade nei prossimi 7 gg o già scaduta)
         $upcomingTasks = Task::where('assignee_id', $user->id)
             ->where('status', '!=', 'done')
             ->whereNotNull('due_date')
@@ -55,16 +64,14 @@ class DashboardController extends Controller
             ->orderBy('due_date', 'asc')
             ->get();
 
-        // b. Pubblicazioni in scadenza (collegate ai progetti dell'utente)
-        // Usiamo l'array di ID delle pubblicazioni già estratto alla riga 19
-        $upcomingPublications = Publication::whereIn('id', $publications->pluck('id'))
+        // Notifiche per TUTTE le TUE pubblicazioni (anche senza progetto)
+        $upcomingPublications = Publication::whereIn('id', $myPublications->pluck('id'))
             ->whereNotIn('status', ['published', 'accepted'])
             ->whereNotNull('target_deadline')
             ->where('target_deadline', '<=', $traUnaSettimana)
             ->orderBy('target_deadline', 'asc')
             ->get();
 
-        // c. Milestone in scadenza
         $upcomingMilestones = Milestone::whereIn('project_id', $projectIds)
             ->whereNotIn('status', ['completed', 'done'])
             ->whereNotNull('due_date')
@@ -73,20 +80,19 @@ class DashboardController extends Controller
             ->orderBy('due_date', 'asc')
             ->get();
 
-        // d. Totale badge notifiche
         $totaleNotifiche = $upcomingTasks->count() + $upcomingPublications->count() + $upcomingMilestones->count();
 
         return view('dashboard', compact(
             'user',
             'projects',
-            'publications',
+            'myPublications',
             'myTasks',
             'assignedTasksCount',
             'scheduledTasksCount',
             'milestones',
             'upcomingTasks',
             'upcomingPublications',
-            'upcomingMilestones', // <-- ASSICURATI CHE CI SIA QUESTA RIGA!
+            'upcomingMilestones',
             'totaleNotifiche'
         ));
     }

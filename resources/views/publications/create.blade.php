@@ -4,7 +4,7 @@
     <div class="container py-4">
         <h1 class="mb-4">Crea una nuova pubblicazione</h1>
 
-        <form action="{{ route('publications.store') }}" method="POST" class="card p-4 shadow-sm border-0">
+        <form action="{{ route('publications.store') }}" method="POST" class="card p-4 shadow-sm border-0" enctype="multipart/form-data">
             @csrf
 
             <div class="mb-3">
@@ -80,11 +80,20 @@
                     type="button" id="add-author" class="btn btn-sm btn-outline-primary mt-2">+ Aggiungi autore</button>
             </div>
 
-            <div class="mb-3">
-                <h5 class="fw-bold">PDF principale</h5>
-                <div class="mb-2">
-                    <label for="file" class="form-label">Aggiungi allegato </label>
-                    <input type="file" name="file" id="file" class="form-control" accept=".pdf">
+            <div class="mb-4">
+                <h5 class="fw-bold text-primary"><i class="fas fa-file-pdf me-2"></i> PDF Principale</h5>
+                <div class="mb-3">
+                    <label for="main_pdf" class="form-label text-muted small">Carica il documento principale della pubblicazione</label>
+                    <input type="file" name="main_pdf" id="main_pdf" class="form-control" accept=".pdf">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h5 class="fw-bold text-secondary"><i class="fas fa-paperclip me-2"></i> Materiali Aggiuntivi (Opzionale)</h5>
+                <div class="mb-3">
+                    <label for="materials" class="form-label text-muted small">Carica eventuali dataset, slide o documenti extra. Puoi selezionare più file insieme.</label>
+                    {{-- L'attributo multiple permette di selezionare più file. Le parentesi quadre nel name indicano a Laravel che è un array --}}
+                    <input type="file" name="materials[]" id="materials" class="form-control" multiple>
                 </div>
             </div>
 

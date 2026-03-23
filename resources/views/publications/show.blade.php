@@ -41,25 +41,57 @@
 
                         <hr class="mb-4">
 
-                        <h5 class="fw-bold mb-3">File Allegati</h5>
-                        @if($publication->attachments->count() > 0)
-                            <ul class="list-group list-group-flush mb-4">
-                                @foreach($publication->attachments as $att)
-                                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center border-0 mb-2">
+                        {{-- SEZIONE PDF PRINCIPALE --}}
+                        <h5 class="fw-bold mb-3 text-primary"><i class="fas fa-file-pdf me-2"></i> PDF Principale</h5>
+                        @php
+                            // Cerchiamo il file con type 'main_pdf'
+                            $mainPdf = $publication->attachments->where('type', 'main_pdf')->first();
+                        @endphp
+
+                        @if($mainPdf)
+                            <div class="card mb-4 border-primary">
+                                <div class="card-body d-flex justify-content-between align-items-center p-3">
+                                    <div class="text-secondary fw-bold" style="word-break: break-all;">
+                                        {{ basename($mainPdf->path) }}
+                                    </div>
+                                    <a class="btn btn-primary fw-bold px-3 ms-3 flex-shrink-0" href="{{ \Illuminate\Support\Facades\Storage::url($mainPdf->path) }}" target="_blank">
+                                        Apri PDF
+                                    </a>
+                                </div>
+                            </div>
+                        @else
+                            <div class="alert alert-light border text-muted fst-italic mb-4">
+                                Nessun PDF principale caricato.
+                            </div>
+                        @endif
+
+                        {{-- SEZIONE MATERIALI AGGIUNTIVI --}}
+                        {{-- Qui ho cambiato text-secondary in text-dark per renderlo nero --}}
+                        <h5 class="fw-bold mb-3 text-dark"><i class="fas fa-paperclip me-2"></i> Materiali Aggiuntivi</h5>
+                        @php
+                            // Filtriamo tutti i file che NON sono il main_pdf (o che hanno specificatamente type 'material')
+                            $materials = $publication->attachments->where('type', 'material');
+                        @endphp
+
+                        @if($materials->count() > 0)
+                            <ul class="list-group list-group-flush mb-4 border rounded">
+                                @foreach($materials as $att)
+                                    <li class="list-group-item p-3 d-flex justify-content-between align-items-center border-bottom">
                                         <div class="text-secondary" style="word-break: break-all;">
-                                            {{ basename($att->path) }}
+                                            📄 {{ basename($att->path) }}
                                         </div>
-                                        <a class="btn btn-sm btn-outline-primary fw-bold px-3 ms-3 flex-shrink-0" href="{{ \Illuminate\Support\Facades\Storage::url($att->path) }}" target="_blank">
+                                        <a class="btn btn-sm btn-outline-secondary fw-bold px-3 ms-3 flex-shrink-0" href="{{ \Illuminate\Support\Facades\Storage::url($att->path) }}" target="_blank" download>
                                             Scarica
                                         </a>
                                     </li>
                                 @endforeach
                             </ul>
                         @else
-                            <div class="text-muted fst-italic">
-                                Nessun file caricato per questa pubblicazione.
+                            <div class="alert alert-light border text-muted fst-italic mb-4">
+                                Nessun materiale aggiuntivo caricato.
                             </div>
                         @endif
+
                     </div>
                 </div>
             </div>

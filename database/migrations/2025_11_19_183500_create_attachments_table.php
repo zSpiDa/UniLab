@@ -9,6 +9,7 @@ return new class extends Migration {
             $table->id();
             $table->morphs('attachable');                 // attachable_type + attachable_id
             $table->string('path');
+            $table->string('type')->nullable();
             $table->foreignId('uploaded_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
         });

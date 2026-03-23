@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException; // <-- Aggiunto per il throw error nel workflow
 
 class PublicationController extends Controller
 {
@@ -54,19 +55,31 @@ class PublicationController extends Controller
 
             // Upload file PDF principale (opzionale)
             if ($request->hasFile('main_pdf')) {
-                $path = $request->file('main_pdf')->store('public/publications/'.$publication->id);
+                $file = $request->file('main_pdf');
+                $filename = $file->getClientOriginalName(); // Recupera il nome originale
+
+                // Salva nel disco 'public' mantenendo il nome originale
+                $path = $file->storeAs('publications/' . $publication->id, $filename, 'public');
+
                 $publication->attachments()->create([
                     'path' => $path,
-                    'uploaded_by' => $request->user()->id,
+                    'type' => 'main_pdf',
+                    'uploaded_by' => auth()->id(),
                 ]);
             }
+
             // Upload materiali aggiuntivi (multipli)
             if ($request->hasFile('materials')) {
                 foreach ($request->file('materials') as $file) {
-                    $path = $file->store('public/publications/'.$publication->id.'/materials');
+                    $filename = $file->getClientOriginalName(); // Recupera il nome originale
+
+                    // Salva nel disco 'public' mantenendo il nome originale
+                    $path = $file->storeAs('publications/' . $publication->id . '/materials', $filename, 'public');
+
                     $publication->attachments()->create([
                         'path' => $path,
-                        'uploaded_by' => $request->user()->id,
+                        'type' => 'material',
+                        'uploaded_by' => auth()->id(),
                     ]);
                 }
             }
@@ -134,14 +147,14 @@ class PublicationController extends Controller
 
             // Upload PDF principale
             if ($request->hasFile('main_pdf')) {
-                // Salva in storage/app/public/publications/{id}
-                $path = $request->file('main_pdf')->store('publications/' . $publication->id, 'public');
+                $file = $request->file('main_pdf');
+                $filename = $file->getClientOriginalName();
 
-                // Aggiorna il campo nel DB (o crea un allegato se usi tabella separata)
-                // Se usi una tabella separata 'attachments':
+                $path = $file->storeAs('publications/' . $publication->id, $filename, 'public');
+
                 $publication->attachments()->create([
                     'path' => $path,
-                    'type' => 'main_pdf', // Esempio
+                    'type' => 'main_pdf',
                     'uploaded_by' => auth()->id(),
                 ]);
             }
@@ -149,7 +162,10 @@ class PublicationController extends Controller
             // Upload Materiali Aggiuntivi
             if ($request->hasFile('materials')) {
                 foreach ($request->file('materials') as $file) {
-                    $path = $file->store('publications/' . $publication->id . '/materials', 'public');
+                    $filename = $file->getClientOriginalName();
+
+                    $path = $file->storeAs('publications/' . $publication->id . '/materials', $filename, 'public');
+
                     $publication->attachments()->create([
                         'path' => $path,
                         'type' => 'material',
