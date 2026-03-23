@@ -29,8 +29,8 @@
         <div class="col-6 col-md-3">
             <div class="card text-center border-warning shadow-sm">
                 <div class="card-body">
-                    <div class="fs-2 fw-bold text-warning">{{ $scheduledTasksCount }}</div>
-                    <div class="text-muted small">Task in corso</div>
+                    <div class="fs-2 fw-bold text-warning">{{ $milestones->count() }}</div>
+                    <div class="text-muted small">Milestone</div>
                 </div>
             </div>
         </div>
@@ -69,7 +69,7 @@
             </div>
         </div>
 
-        {{-- 2. Milestone (Ora è a Destra, scambiata con Task) --}}
+        {{-- 2. Milestone (Destra) --}}
         <div class="col-12 col-md-6">
             <div class="card h-100 shadow-sm border-0">
                 <div class="card-header bg-white fw-semibold">Milestone dei tuoi Progetti</div>
@@ -98,7 +98,7 @@
             </div>
         </div>
 
-        {{-- 3. Task personali (Ora è in basso a sinistra) --}}
+        {{-- 3. Task personali (In basso a sinistra) --}}
         <div class="col-12 col-md-6">
             <div class="card h-100 shadow-sm border-0">
                 <div class="card-header bg-white fw-semibold">Task personali</div>
@@ -106,7 +106,28 @@
                     @forelse($myTasks as $task)
                         <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
                             <div>
-                                <div class="fw-semibold">{{ str_replace('Task: ', '', $task->title) }}</div>
+                                <div class="fw-semibold d-flex align-items-center gap-2">
+                                    {{ str_replace('Task: ', '', $task->title) }}
+
+                                    {{-- NUOVO: Badge Priorità --}}
+                                    @php
+                                        $priorityClass = match($task->priority) {
+                                            'high' => 'bg-danger',
+                                            'medium' => 'bg-warning text-dark',
+                                            'low' => 'bg-info text-dark',
+                                            default => 'bg-secondary'
+                                        };
+                                        $priorityLabel = match($task->priority) {
+                                            'high' => 'Alta',
+                                            'medium' => 'Media',
+                                            'low' => 'Bassa',
+                                            default => ucfirst($task->priority ?? 'N/D')
+                                        };
+                                    @endphp
+                                    <span class="badge {{ $priorityClass }}" style="font-size: 0.65rem;">
+                                        {{ $priorityLabel }}
+                                    </span>
+                                </div>
                                 <small class="text-muted">{{ $task->project?->title ?? 'Nessun Progetto' }}</small>
                             </div>
                             <div class="text-end">
@@ -146,6 +167,7 @@
             </div>
         </div>
 
+        {{-- 4. Pubblicazioni collegate --}}
         <div class="col-12 col-md-6">
             <div class="card h-100 shadow-sm border-0">
                 <div class="card-header bg-white fw-semibold">Pubblicazioni collegate</div>
