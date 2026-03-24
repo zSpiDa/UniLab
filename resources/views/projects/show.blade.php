@@ -60,9 +60,13 @@
                     <a href="{{ route('projects.edit', $project) }}" class="btn btn-warning btn-sm fw-bold shadow-sm">
                         <i class="bi bi-pencil"></i> Modifica
                     </a>
-                    <button type="button" class="btn btn-danger btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteProjectModal">
-                        <i class="bi bi-trash"></i> Elimina
-                    </button>
+                    <form id="delete-project-form" action="{{ route('projects.destroy', $project) }}" method="POST" class="d-inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="button" class="btn btn-danger btn-sm fw-bold shadow-sm" onclick="event.preventDefault(); if(confirm('Sei sicuro di voler eliminare questo progetto?')) { document.getElementById('delete-project-form').submit(); }">
+                            <i class="bi bi-trash"></i> Elimina
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

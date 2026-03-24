@@ -132,6 +132,10 @@ Route::middleware(['auth', 'role:pi,manager,researcher'])->group(function () {
 Route::middleware(['auth', 'role:pi'])->group(function () {
     Route::delete('/publications/{publication}', [PublicationController::class, 'destroy'])->name('publications.destroy');
 });
+//rotta per eliminare un progetto solo manager e PI
+Route::middleware(['auth', 'role:pi,manager'])->group(function () {
+    Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+});
 
 
 
