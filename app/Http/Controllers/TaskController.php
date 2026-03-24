@@ -6,7 +6,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\Project;
 use App\Models\Milestone;
-use App\Models\Tag; // <-- AGGIUNTO IL MODELLO TAG
+use App\Models\Tag;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
@@ -15,7 +15,6 @@ class TaskController extends Controller
     {
         $tasks = Task::with(['project', 'user', 'tags'])->latest()->paginate(10);
         return view('task.index', compact('tasks'));
-
     }
 
     public function create()
@@ -35,7 +34,7 @@ class TaskController extends Controller
             'priority'    => 'required|in:low,medium,high',
             'assignee_id' => 'required|exists:users,id',
             'target'      => 'nullable|string',
-            'tags'        => 'nullable|string', // <-- AGGIUNTO ALLA VALIDAZIONE
+            'tags'        => 'nullable|string',
         ]);
 
         if ($request->filled('target')) {
@@ -78,7 +77,7 @@ class TaskController extends Controller
 
     public function show(Task $task)
     {
-        $task->load(['user', 'project', 'milestone', 'tags']); // <-- Aggiunto 'tags'
+        $task->load(['user', 'project', 'milestone', 'tags']);
         return view('task.show', compact('task'));
     }
 
@@ -97,10 +96,9 @@ class TaskController extends Controller
             'due_date'    => 'nullable|date',
             'status'      => 'required|in:open,in_progress,done',
             'priority'    => 'required|in:low,medium,high',
-            // Messo 'nullable' altrimenti il form di modifica veloce dal progetto andava in blocco!
             'assignee_id' => 'nullable|exists:users,id',
             'target'      => 'nullable|string',
-            'tags'        => 'nullable|string', // <-- AGGIUNTO ALLA VALIDAZIONE
+            'tags'        => 'nullable|string',
         ]);
 
         if ($request->filled('target')) {
@@ -135,13 +133,18 @@ class TaskController extends Controller
             $task->tags()->sync($tagIds);
         }
 
-        return redirect()->route('tasks.index')
+        // Rimandiamo l'utente alla pagina in cui si trovava (es. il progetto) invece che sbalzarlo sulla index delle task
+        return redirect()->back()
             ->with('success', 'Task aggiornata con successo!');
     }
 
     public function destroy(Task $task)
     {
+        // Eliminiamo la task
         $task->delete();
-        return redirect()->back()->with('success', 'Task eliminata.');
+
+        // Reindirizziamo sempre alla pagina principale delle task
+        return redirect()->route('tasks.index')
+            ->with('success', 'Task eliminata con successo.');
     }
 }
