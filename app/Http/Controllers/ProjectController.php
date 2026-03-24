@@ -76,6 +76,10 @@ class ProjectController extends Controller
 
     public function create()
     {
+        if (auth()->user()->cannot('create', Project::class)) {
+            abort(403, 'Non hai il permesso di creare un progetto.');
+        }
+
         $users = User::orderBy('name')->get();
         return view('projects.create', compact('users'));
     }

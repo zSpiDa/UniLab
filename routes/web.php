@@ -128,6 +128,12 @@ Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.
 Route::middleware(['auth', 'role:pi,manager,researcher'])->group(function () {
     Route::delete('/publications/{publication}', [PublicationController::class, 'destroy'])->name('publications.destroy');
 });
+//rotta per evitare che project manager elimini le pubblicazioni di altri
+Route::middleware(['auth', 'role:pi'])->group(function () {
+    Route::delete('/publications/{publication}', [PublicationController::class, 'destroy'])->name('publications.destroy');
+});
+
+
 
 
 require __DIR__.'/auth.php';

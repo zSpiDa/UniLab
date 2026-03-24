@@ -103,9 +103,7 @@ class DemoDataSeeder extends Seeder
                 // Tag su pubblicazioni
                 $pub->tags()->attach($tags->random(2)->pluck('id'));
             }
-
-            // Tag su progetto
-            $project->tags()->attach($tags->random(3)->pluck('id'));
+            
 
             // Allegati & Commenti polimorfici
             $project->attachments()->create([

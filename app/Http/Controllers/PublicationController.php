@@ -15,6 +15,7 @@ class PublicationController extends Controller
     {
         $this->middleware('auth');
         $this->middleware('role:pi,manager,researcher')->only(['create','store','edit','update','destroy']);
+        $this->middleware('check.publication.ownership')->only(['edit','update','destroy']);
     }
 
     /**
