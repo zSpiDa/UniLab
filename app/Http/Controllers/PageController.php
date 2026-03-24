@@ -5,16 +5,19 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\Group;
+use App\Models\User;
 
 class PageController extends Controller
 {
     public function home(){
         $group = Group::with('users')->first();
+        $allUsers = User::all();
         $projectCount = Project::count();
 
         return view('home', [
             'projectCount' => $projectCount,
             'group' => $group,
+            'allUsers' => $allUsers,
             'message' => $projectCount === 0 ? 'Non ci sono progetti al momento.' : null,
         ]);
     }

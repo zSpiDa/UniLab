@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 */
 
 Route::get('/', [PageController::class, 'home']);
+Route::get('/home', [PageController::class, 'home'])->name('home');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -93,7 +94,7 @@ Route::middleware(['auth', 'role:pi,manager'])->group(function () {
 
 
 //Rotta per il gruppo di ricerca con middleware
-Route::middleware(['auth', 'role:pi,manager'])->group(function () {
+Route::middleware(['auth', 'role:pi'])->group(function () {
     Route::get('/groups', [App\Http\Controllers\GroupController::class, 'edit'])->name('groups.edit');
     Route::post('/groups/update', [App\Http\Controllers\GroupController::class, 'update'])->name('groups.update');
     Route::post('/groups/add-member', [App\Http\Controllers\GroupController::class, 'addMember'])->name('groups.addMember');
@@ -122,6 +123,11 @@ Route::put('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.upda
 
 //Rotta per ELIMINARE TASKS
 Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy')->middleware(['auth', 'role:pi,manager']);
+
+//Rotta per evitare che collaboratore elimini le pubblicazioni
+Route::middleware(['auth', 'role:pi,manager,researcher'])->group(function () {
+    Route::delete('/publications/{publication}', [PublicationController::class, 'destroy'])->name('publications.destroy');
+});
 
 
 require __DIR__.'/auth.php';

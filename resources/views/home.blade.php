@@ -34,8 +34,8 @@
                     <div class="mt-2">
                         Membri del gruppo:
                         <ul>
-                            @foreach($group->users as $u)
-                                <li>{{ $u->name }} ({{ $u->email }})</li>
+                            @foreach($allUsers as $u)
+                                <li>{{ $u->name }} - <strong>{{ $u->role }}</strong> ({{ $u->email }})</li>
                             @endforeach
                         </ul>
                     </div>
