@@ -132,7 +132,7 @@ class PublicationController extends Controller
             // Salvataggio Autori (usiamo il metodo helper dedicato)
             $this->syncAuthors($publication, $request);
 
-            //Workflow dove non bisogna tornare indietro di stato (es. da published a submitted)
+            // Workflow dove non bisogna tornare indietro di stato
             if (isset($validated['status']) && $validated['status'] !== $publication->status) {
                 $allowedTransitions = [
                     'drafting' => ['submitted'],
@@ -145,13 +145,25 @@ class PublicationController extends Controller
                 }
             }
 
-            // Upload PDF principale
+            // --- GESTIONE PDF PRINCIPALE (Sostituzione) ---
             if ($request->hasFile('main_pdf')) {
+                // 1. Cerchiamo se esiste già un main_pdf nel database
+                $vecchioPdf = $publication->attachments()->where('type', 'main_pdf')->first();
+
+                // 2. Se esiste, lo eliminiamo fisicamente dal server e poi dal database
+                if ($vecchioPdf) {
+                    if (Storage::disk('public')->exists($vecchioPdf->path)) {
+                        Storage::disk('public')->delete($vecchioPdf->path);
+                    }
+                    $vecchioPdf->delete(); // Rimuove la riga dalla tabella attachments
+                }
+
+                // 3. Salviamo il nuovo file appena caricato
                 $file = $request->file('main_pdf');
                 $filename = $file->getClientOriginalName();
-
                 $path = $file->storeAs('publications/' . $publication->id, $filename, 'public');
 
+                // 4. Creiamo il nuovo record nel database
                 $publication->attachments()->create([
                     'path' => $path,
                     'type' => 'main_pdf',
@@ -159,7 +171,7 @@ class PublicationController extends Controller
                 ]);
             }
 
-            // Upload Materiali Aggiuntivi
+            // --- GESTIONE MATERIALI AGGIUNTIVI (Aggiunta) ---
             if ($request->hasFile('materials')) {
                 foreach ($request->file('materials') as $file) {
                     $filename = $file->getClientOriginalName();
