@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException; // <-- Aggiunto per il throw error nel workflow
+use App\Services\NotificationService;
 
 class PublicationController extends Controller
 {
@@ -115,6 +116,9 @@ class PublicationController extends Controller
      */
     public function update(Request $request, Publication $publication)
     {
+        $oldStatus = $publication->status;
+        $oldTargetDeadline = $publication->target_deadline;
+
         // Validiamo i dati usando il metodo helper privato sotto
         $validated = $this->validateData($request);
 
@@ -187,6 +191,15 @@ class PublicationController extends Controller
                 }
             }
         });
+
+        $publication->load(['projects.users', 'authors.user']);
+        if ($oldStatus !== $publication->status) {
+            NotificationService::notifyPublicationStatusChanged($publication, $oldStatus);
+        }
+
+        if ($oldTargetDeadline !== $publication->target_deadline) {
+            NotificationService::notifyPublicationDeadlineChanged($publication, $oldTargetDeadline);
+        }
 
         return redirect()->route('publications.index')->with('success', 'Pubblicazione modificata con successo.');
     }

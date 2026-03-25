@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Milestone;
 use Illuminate\Http\Request;
+use App\Services\NotificationService;
 
 class MilestoneController extends Controller
 {
@@ -22,11 +23,14 @@ class MilestoneController extends Controller
         ]);
 
         // 2. Creazione (sfruttando la relazione)
-        $project->milestones()->create([
+        $milestone = $project->milestones()->create([
             'title' => $validated['title'],
             'due_date' => $validated['due_date'],
             'status' => $validated['status'] ?? 'planned', // Impostiamo lo stato iniziale di default se non fornito
         ]);
+
+        $milestone->load('project.users');
+        NotificationService::notifyMilestoneCreated($milestone);
 
         // 3. Ritorno alla pagina precedente
         return back()->with('success', 'Milestone aggiunta con successo!');
@@ -44,6 +48,8 @@ class MilestoneController extends Controller
 
     public function update(Request $request, Milestone $milestone)
     {
+        $oldDueDate = $milestone->due_date;
+
         // 1. Validazione
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -53,6 +59,14 @@ class MilestoneController extends Controller
 
         // 2. Aggiornamento
         $milestone->update($validated);
+
+        if ($oldDueDate !== $milestone->due_date) {
+            $milestone->load('project.users');
+            NotificationService::notifyMilestoneDeadlineChanged($milestone, $oldDueDate);
+            foreach ($milestone->project->users as $member) {
+                NotificationService::notifyMilestoneDeadlineReminder($milestone, $member);
+            }
+        }
 
         // 3. Ritorno alla pagina precedente
         return redirect()->route('projects.show', $milestone->project_id)

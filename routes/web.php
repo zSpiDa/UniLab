@@ -8,6 +8,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\CommentsController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Api\NotificationApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -137,6 +138,14 @@ Route::middleware(['auth', 'role:pi,manager'])->group(function () {
     Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
 });
 
+//rotte per le notifiche
+Route::middleware(['auth'])->group(function () {
+    Route::get('/notifications', [NotificationApiController::class, 'index']);
+    Route::get('/notifications/unread', [NotificationApiController::class, 'unread']);
+    Route::patch('/notifications/{notification}/read', [NotificationApiController::class, 'markAsRead']);
+    Route::patch('/notifications/read-all', [NotificationApiController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{notification}', [NotificationApiController::class, 'destroy']);
+});
 
 
 

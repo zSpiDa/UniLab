@@ -13,6 +13,7 @@ use App\Models\Attachment;
 use App\Models\Comment;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
 
 class ProjectController extends Controller
 {
@@ -47,6 +48,11 @@ class ProjectController extends Controller
                 'effort' => $request->effort ?? null,
             ],
         ]);
+
+        $addedUser = User::find($request->user_id);
+        if ($addedUser) {
+            NotificationService::notifyUserAddedToProject($addedUser, $project);
+        }
 
         return redirect()->route('projects.show', $project)
             ->with('success', 'Membro aggiunto al team.');
@@ -129,6 +135,13 @@ class ProjectController extends Controller
             }
             $project->users()->sync($syncData);
 
+            foreach ($usersInput as $userId) {
+                $addedUser = User::find($userId);
+                if ($addedUser) {
+                    NotificationService::notifyUserAddedToProject($addedUser, $project);
+                }
+            }
+
             // --- GESTIONE FILE ---
             if ($request->hasFile('file')) {
                 $path = $request->file('file')->store('projects', 'public');
@@ -161,6 +174,8 @@ class ProjectController extends Controller
                             'due_date' => $m['due_date'] ?? null,
                             'status'   => $m['status'] ?? 'active',
                         ]);
+                        $newMilestone->load('project.users');
+                        NotificationService::notifyMilestoneCreated($newMilestone);
                         // Salviamo l'ID corrispondente all'indice Javascript
                         $createdMilestones[$index] = $newMilestone->id;
                     }
@@ -190,6 +205,14 @@ class ProjectController extends Controller
                             'assignee_id'  => !empty($taskData['assignee_id']) ? $taskData['assignee_id'] : null,
                             'milestone_id' => $milestoneId, // Associamo la milestone corretta
                         ]);
+
+                        if ($newTask->assignee_id) {
+                            $newTask->load('project', 'user');
+                            if ($newTask->user) {
+                                NotificationService::notifyTaskAssigned($newTask, $newTask->user);
+                                NotificationService::notifyTaskDeadlineReminder($newTask);
+                            }
+                        }
 
                         // Se la task appena creata ha dei tags, li salviamo
                         if (!empty($taskData['tags'])) {
@@ -277,6 +300,8 @@ class ProjectController extends Controller
 
         DB::transaction(function () use ($validated, $request, $project, $tagsInput, $usersInput) {
 
+            $existingMemberIds = $project->users()->pluck('users.id')->toArray();
+
             $project->update($validated);
 
             // --- AGGIORNAMENTO MEMBRI ---
@@ -288,6 +313,15 @@ class ProjectController extends Controller
                 }
             }
             $project->users()->sync($syncData);
+
+            $newMemberIds = array_keys($syncData);
+            $addedIds = array_diff($newMemberIds, $existingMemberIds);
+            foreach ($addedIds as $addedId) {
+                $addedUser = User::find($addedId);
+                if ($addedUser) {
+                    NotificationService::notifyUserAddedToProject($addedUser, $project);
+                }
+            }
 
             // --- AGGIORNAMENTO TAG ---
             if ($tagsInput !== null) {
@@ -310,18 +344,26 @@ class ProjectController extends Controller
                     if (isset($m['id']) && $m['id']) {
                         $milestone = $project->milestones()->find($m['id']);
                         if ($milestone) {
+                            $oldDueDate = $milestone->due_date;
                             $milestone->update([
                                 'title'    => $m['title'],
                                 'due_date' => $m['due_date'],
                                 'status'   => $m['status'],
                             ]);
+
+                            if ($oldDueDate !== $milestone->due_date) {
+                                $milestone->load('project.users');
+                                NotificationService::notifyMilestoneDeadlineChanged($milestone, $oldDueDate);
+                            }
                         }
                     } else {
-                        $project->milestones()->create([
+                        $newMilestone = $project->milestones()->create([
                             'title'    => $m['title'],
                             'due_date' => $m['due_date'],
                             'status'   => $m['status'] ?? 'active',
                         ]);
+                        $newMilestone->load('project.users');
+                        NotificationService::notifyMilestoneCreated($newMilestone);
                     }
                 }
             }

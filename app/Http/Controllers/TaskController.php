@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Milestone;
 use App\Models\Tag;
 use Illuminate\Http\Request;
+use App\Services\NotificationService;
 
 class TaskController extends Controller
 {
@@ -59,6 +60,12 @@ class TaskController extends Controller
         // Creiamo la task e la assegniamo a una variabile
         $task = Task::create($validated);
 
+        if ($task->assignee_id) {
+            $task->load('project', 'user');
+            NotificationService::notifyTaskAssigned($task, $task->user);
+            NotificationService::notifyTaskDeadlineReminder($task);
+        }
+
         // --- SALVATAGGIO TAG DELLA NUOVA TASK ---
         if (!empty($request->tags)) {
             $tagNames = array_filter(array_map('trim', explode(',', $request->tags)));
@@ -90,6 +97,10 @@ class TaskController extends Controller
 
     public function update(Request $request, Task $task)
     {
+        $oldAssigneeId = $task->assignee_id;
+        $oldDueDate = $task->due_date;
+        $oldStatus = $task->status;
+
         $validated = $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -120,6 +131,23 @@ class TaskController extends Controller
         unset($validated['target']);
 
         $task->update($validated);
+        $task->load('project', 'user');
+
+        if ($task->assignee_id && $oldAssigneeId !== $task->assignee_id && $task->user) {
+            NotificationService::notifyTaskAssigned($task, $task->user);
+        }
+
+        if ($task->assignee_id) {
+            NotificationService::notifyTaskDeadlineReminder($task);
+        }
+
+        if ($oldDueDate !== $task->due_date) {
+            NotificationService::notifyTaskDeadlineChanged($task, $oldDueDate);
+        }
+
+        if ($oldStatus !== $task->status) {
+            NotificationService::notifyTaskStatusChanged($task, $oldStatus);
+        }
 
         // --- AGGIORNAMENTO TAG DELLA TASK ---
         if ($request->has('tags')) {
