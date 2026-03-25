@@ -196,7 +196,25 @@ class PublicationController extends Controller
      */
     public function destroy(Publication $publication)
     {
+        $user = auth()->user();
+
+        // 1. CONTROLLO PERMESSI: Se l'utente è un "researcher", verifichiamo che sia autore
+        if ($user->role === 'researcher') {
+
+            // Controlliamo se l'ID dell'utente loggato è presente tra gli user_id degli autori di questa pubblicazione
+            $isAuthor = $publication->authors->contains('user_id', $user->id);
+
+            // Se non è autore, blocchiamo l'azione con un errore 403
+            if (!$isAuthor) {
+                abort(403, 'Azione non autorizzata: puoi eliminare solo le tue pubblicazioni.');
+            }
+        }
+
+        // 2. ELIMINAZIONE
+        // Se l'utente è PI, Manager, o un Researcher autorizzato, si procede con l'eliminazione
         $publication->delete();
+
+        // 3. REDIRECT
         return redirect()->route('publications.index')->with('success', 'Pubblicazione eliminata.');
     }
 
