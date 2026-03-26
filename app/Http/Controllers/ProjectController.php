@@ -368,9 +368,10 @@ class ProjectController extends Controller
                 }
             }
 
-            // --- GESTIONE FILE ---
+            // --- GESTIONE FILE FACENDO VEDERE IL FILENAME E NON HASHATO---
             if ($request->hasFile('file')) {
                 $path = $request->file('file')->store('projects', 'public');
+                $path = str_replace('projects/', 'projects/'.uniqid().'_', $path);
                 $project->attachments()->create([
                     'path' => $path,
                     'name' => $request->file('file')->getClientOriginalName(),

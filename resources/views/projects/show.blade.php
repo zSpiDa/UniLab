@@ -83,10 +83,18 @@
                 <strong>{{ $progress }}%</strong> completato ({{ $completedTasks }}/{{ $totalTasks }} milestone)
             </div>
             <div class="progress" style="height: 20px;">
-                <div class="progress-bar" role="progressbar" style="width: {{ $progress }}%;" aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100">
+                <div id="project-progress-bar" class="progress-bar" role="progressbar" data-progress="{{ $progress }}" aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100">
                     {{ $progress }}%
                 </div>
             </div>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const progressBar = document.getElementById('project-progress-bar');
+                    if (progressBar) {
+                        progressBar.style.width = (progressBar.dataset.progress || 0) + '%';
+                    }
+                });
+            </script>
         </div>
     </div>
 
@@ -142,10 +150,10 @@
                     @forelse($project->attachments as $a)
                         <div class="d-flex justify-content-between align-items-center border-bottom py-2">
                             <div class="text-truncate me-2">
-                                {{ basename($a->path) }}
+                                {{ $a->name ?? basename($a->path) }}
                                 <div class="small text-muted">{{ $a->created_at->format('d/m/Y') }}</div>
                             </div>
-                            <a href="{{ asset('storage/' . $a->path) }}" class="btn btn-sm btn-outline-primary fw-bold" download>
+                            <a href="{{ asset('storage/' . $a->path) }}" class="btn btn-sm btn-outline-primary fw-bold" download="{{ $a->name ?? basename($a->path) }}">
                                 <i class="bi bi-download"></i> Scarica
                             </a>
                         </div>
